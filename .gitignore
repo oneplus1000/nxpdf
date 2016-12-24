@@ -1,0 +1,6 @@
+debug.test
+.vscode
+*~
+*.bak
+*.swp
+testing/out
