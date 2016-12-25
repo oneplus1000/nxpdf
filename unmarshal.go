@@ -1,8 +1,12 @@
 package gopdf
 
 import (
+	"bytes"
+	"compress/zlib"
 	"fmt"
 	"io"
+
+	"io/ioutil"
 
 	"github.com/oneplus1000/pdf"
 	"github.com/pkg/errors"
@@ -59,7 +63,10 @@ func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
 					return errors.Wrap(err, "")
 				}
 				if child.Kind() == pdf.Stream {
-					u.pushStream(initObjectID(refID, true), child.Reader())
+					err := u.pushStream(initObjectID(refID, true), child.Reader())
+					if err != nil {
+						return errors.Wrap(err, "")
+					}
 				}
 			} else {
 				u.pushVal(myID, key, child)
@@ -98,7 +105,10 @@ func (u *unmarshalHelper) doArray(myID objectID, parent pdf.Value) error {
 					return errors.Wrap(err, "")
 				}
 				if child.Kind() == pdf.Stream {
-					u.pushStream(initObjectID(refID, true), child.Reader())
+					err := u.pushStream(initObjectID(refID, true), child.Reader())
+					if err != nil {
+						return errors.Wrap(err, "")
+					}
 				}
 			} else {
 				u.pushItemVal(myID, i, child)
@@ -120,7 +130,9 @@ func (u *unmarshalHelper) doArray(myID objectID, parent pdf.Value) error {
 }
 
 func (u *unmarshalHelper) pushVal(myid objectID, name string, val pdf.Value) {
-	fmt.Printf("%s %s %s\n", myid, name, val.String())
+	if printDebug {
+		fmt.Printf("%s %s %s\n", myid, name, val.String())
+	}
 	n := pdfNode{
 		key: nodeKey{
 			use:  1,
@@ -134,13 +146,48 @@ func (u *unmarshalHelper) pushVal(myid objectID, name string, val pdf.Value) {
 	u.result.push(myid, n)
 }
 
-func (u *unmarshalHelper) pushStream(myid objectID, r io.ReadCloser) {
-	fmt.Printf("%s [stream]\n", myid)
+func (u *unmarshalHelper) pushStream(myid objectID, r io.ReadCloser) error {
+	if printDebug {
+		fmt.Printf("%s [stream]\n", myid)
+	}
 
+	stream, err := ioutil.ReadAll(r)
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+	defer r.Close()
+
+	var buff bytes.Buffer
+	var zbuff bytes.Buffer
+	zw := zlib.NewWriter(&zbuff)
+	defer zw.Close()
+	_, err = zw.Write(stream)
+	if err != nil {
+		return errors.Wrap(err, "zlib.Write fail")
+	}
+	zw.Flush()
+	zbuff.WriteTo(&buff)
+
+	fmt.Printf("%s [stream]%d\n%+v", myid, len(stream), buff.Bytes())
+
+	n := pdfNode{
+		key: nodeKey{
+			use: 3,
+		},
+		content: nodeContent{
+			use:    3,
+			stream: stream,
+		},
+	}
+	u.result.push(myid, n)
+
+	return nil
 }
 
 func (u *unmarshalHelper) pushItemVal(myid objectID, index int, val pdf.Value) {
-	fmt.Printf("%s [%d] %s\n", myid, index, val.String())
+	if printDebug {
+		fmt.Printf("%s [%d] %s\n", myid, index, val.String())
+	}
 	n := pdfNode{
 		key: nodeKey{
 			use:   2,
@@ -155,7 +202,9 @@ func (u *unmarshalHelper) pushItemVal(myid objectID, index int, val pdf.Value) {
 }
 
 func (u *unmarshalHelper) pushItemRef(myid objectID, index int, refID objectID) {
-	fmt.Printf("%s [%d] '%s 0 R'\n", myid, index, refID)
+	if printDebug {
+		fmt.Printf("%s [%d] '%s 0 R'\n", myid, index, refID)
+	}
 	n := pdfNode{
 		key: nodeKey{
 			use:   2,
@@ -170,7 +219,9 @@ func (u *unmarshalHelper) pushItemRef(myid objectID, index int, refID objectID) 
 }
 
 func (u *unmarshalHelper) pushRef(myid objectID, name string, refID objectID) {
-	fmt.Printf("%s %s '%s 0 R'\n", myid, name, refID)
+	if printDebug {
+		fmt.Printf("%s %s '%s 0 R'\n", myid, name, refID)
+	}
 	n := pdfNode{
 		key: nodeKey{
 			use:  1,
@@ -183,3 +234,5 @@ func (u *unmarshalHelper) pushRef(myid objectID, name string, refID objectID) {
 	}
 	u.result.push(myid, n)
 }
+
+const printDebug = false

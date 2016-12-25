@@ -24,5 +24,10 @@ func testRead(t *testing.T, path string) {
 	}
 	_ = pdfData
 	//fmt.Printf("%s", pdfData.String())
-	WritePdf(pdfData)
+	data, err = pdfData.Bytes()
+	if err != nil {
+		t.Errorf("%+v", err)
+		return
+	}
+	ioutil.WriteFile("testing/out/pdf_from_gopdf.pdf", data, 0777)
 }

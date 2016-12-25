@@ -2,7 +2,6 @@ package gopdf
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -23,10 +22,6 @@ func ReadPdf(rd io.Reader) (*PdfData, error) {
 		return nil, errors.Wrap(err, "pdf.NewReader(...) fail")
 	}
 	return unmarshal(pdfReader)
-}
-
-func WritePdf(pdfdata *PdfData) {
-	fmt.Printf("\n\n%s\n", string(pdfdata.Bytes()))
 }
 
 func EmptyPdf() {
