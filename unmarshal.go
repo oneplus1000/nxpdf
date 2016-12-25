@@ -1,8 +1,6 @@
 package gopdf
 
 import (
-	"bytes"
-	"compress/zlib"
 	"fmt"
 	"io"
 
@@ -22,17 +20,17 @@ func unmarshal(rd *pdf.Reader) (*PdfData, error) {
 }
 
 type unmarshalHelper struct {
-	trailer pdf.Value
-	result  *PdfData
-	srcIDs  map[uint32]int
-	fakeID  uint32
+	trailer         pdf.Value
+	result          *PdfData
+	unmarshalledIDs map[uint32]objectID
+	fakeID          uint32
 }
 
 func newUnmarshalHelper(trailer pdf.Value) *unmarshalHelper {
 	var uh unmarshalHelper
 	uh.trailer = trailer
 	uh.result = newPdfData()
-	uh.srcIDs = make(map[uint32]int)
+	uh.unmarshalledIDs = make(map[uint32]objectID)
 	uh.fakeID = 4000
 	return &uh
 }
@@ -50,24 +48,40 @@ func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
 
 	keys := parent.Keys()
 	for _, key := range keys {
-		if key == "Parent" {
+
+		/*if key == "Parent" {
 			continue
-		}
+		}*/
+
 		child := parent.Key(key)
 		if child.Kind() == pdf.Dict || child.Kind() == pdf.Stream {
 			refID, _ := child.RefTo()
-			if refID != 0 {
-				u.pushRef(myID, key, initObjectID(refID, true))
-				err := u.doDict(initObjectID(refID, true), child)
+			refObjID := initObjectID(refID, true)
+			if refID != 0 && refObjID != myID {
+				u.pushRef(myID, key, refObjID)
+				if _, ok := u.unmarshalledIDs[refID]; ok {
+					fmt.Printf("--------------->%s\n", key)
+					continue
+				}
+				u.unmarshalledIDs[refID] = refObjID
+				err := u.doDict(refObjID, child)
 				if err != nil {
 					return errors.Wrap(err, "")
 				}
 				if child.Kind() == pdf.Stream {
-					err := u.pushStream(initObjectID(refID, true), child.Reader())
+					err := u.pushStream(refObjID, child.Reader())
 					if err != nil {
 						return errors.Wrap(err, "")
 					}
 				}
+			} else if refID != 0 && refObjID == myID {
+				//fmt.Printf("---------%s %d\n", key, refObjID.id)
+				fakeID := u.nextFakeID()
+				err := u.doDict(initObjectID(fakeID, false), child)
+				if err != nil {
+					return errors.Wrap(err, "")
+				}
+				u.pushRef(myID, key, initObjectID(fakeID, false))
 			} else {
 				u.pushVal(myID, key, child)
 			}
@@ -75,10 +89,10 @@ func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
 		} else if child.Kind() == pdf.Array {
 			fakeID := u.nextFakeID()
 			err := u.doArray(initObjectID(fakeID, false), child)
-			u.pushRef(myID, key, initObjectID(fakeID, false))
 			if err != nil {
 				return errors.Wrap(err, "")
 			}
+			u.pushRef(myID, key, initObjectID(fakeID, false))
 		} else {
 			u.pushVal(myID, key, child)
 		}
@@ -98,18 +112,30 @@ func (u *unmarshalHelper) doArray(myID objectID, parent pdf.Value) error {
 		child := parent.Index(i)
 		if child.Kind() == pdf.Dict || child.Kind() == pdf.Stream {
 			refID, _ := child.RefTo()
-			if refID != 0 {
-				u.pushItemRef(myID, i, initObjectID(refID, true))
-				err := u.doDict(initObjectID(refID, true), child)
+			refObjID := initObjectID(refID, true)
+			if refID != 0 && refObjID != myID {
+				u.pushItemRef(myID, i, refObjID)
+				if _, ok := u.unmarshalledIDs[refID]; ok {
+					continue
+				}
+				u.unmarshalledIDs[refID] = refObjID
+				err := u.doDict(refObjID, child)
 				if err != nil {
 					return errors.Wrap(err, "")
 				}
 				if child.Kind() == pdf.Stream {
-					err := u.pushStream(initObjectID(refID, true), child.Reader())
+					err := u.pushStream(refObjID, child.Reader())
 					if err != nil {
 						return errors.Wrap(err, "")
 					}
 				}
+			} else if refID != 0 && refObjID == myID {
+				fakeID := u.nextFakeID()
+				err := u.doDict(initObjectID(fakeID, false), child)
+				if err != nil {
+					return errors.Wrap(err, "")
+				}
+				u.pushItemRef(myID, i, initObjectID(fakeID, false))
 			} else {
 				u.pushItemVal(myID, i, child)
 			}
@@ -157,7 +183,7 @@ func (u *unmarshalHelper) pushStream(myid objectID, r io.ReadCloser) error {
 	}
 	defer r.Close()
 
-	var buff bytes.Buffer
+	/*var buff bytes.Buffer
 	var zbuff bytes.Buffer
 	zw := zlib.NewWriter(&zbuff)
 	defer zw.Close()
@@ -169,7 +195,7 @@ func (u *unmarshalHelper) pushStream(myid objectID, r io.ReadCloser) error {
 	zbuff.WriteTo(&buff)
 
 	fmt.Printf("%s [stream]%d\n%+v", myid, len(stream), buff.Bytes())
-
+	*/
 	n := pdfNode{
 		key: nodeKey{
 			use: 3,
@@ -235,4 +261,4 @@ func (u *unmarshalHelper) pushRef(myid objectID, name string, refID objectID) {
 	u.result.push(myid, n)
 }
 
-const printDebug = false
+const printDebug = true

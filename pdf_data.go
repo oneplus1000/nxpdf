@@ -49,13 +49,13 @@ func (p PdfData) Bytes() ([]byte, error) {
 		if realID > 0 {
 			buff.WriteString("\n")
 			xreftable = append(xreftable, buff.Len())
-			buff.WriteString(fmt.Sprintf("%d 0 obj\n", realID))
+			buff.WriteString(fmt.Sprintf("%d 0 obj", realID))
 			data, err := p.bytesOfNodesByID(realObjID)
 			if err != nil {
 				return nil, errors.Wrap(err, "")
 			}
 			buff.Write(data)
-			buff.WriteString("endobj\n")
+			buff.WriteString("\nendobj\n")
 		} else {
 			data, err := p.bytesOfNodesByID(realObjID)
 			if err != nil {
@@ -67,9 +67,9 @@ func (p PdfData) Bytes() ([]byte, error) {
 	startxref := buff.Len()
 	buff.WriteString("\nxref\n")
 	buff.Write(p.bytesOfXref(xreftable))
-	buff.WriteString("trailer\n")
+	buff.WriteString("trailer")
 	buffTrailer.WriteTo(&buff)
-	buff.WriteString("startxref\n")
+	buff.WriteString("\nstartxref\n")
 	buff.WriteString(fmt.Sprintf("%d", startxref))
 	buff.WriteString("\n%%EOF\n")
 
@@ -104,41 +104,44 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 	if isArray {
 		buff.WriteString("[")
 	} else {
-		buff.WriteString("<<\n")
+		buff.WriteString("\n<<\n")
 	}
 
-	for i, node := range *nodes {
-		//key
-		if node.key.use == 1 {
-			buff.WriteString(fmt.Sprintf("/%s", node.key.name))
-		} else if node.key.use == 3 {
-			streamNodeIndex = i
-			continue
-		}
-		//content
-		buff.WriteString(" ")
-		if node.content.use == 1 {
-			buff.WriteString(fmt.Sprintf("%s", node.content.str))
-		} else if node.content.use == 2 {
-			if node.content.refTo.isReal {
-				buff.WriteString(fmt.Sprintf("%d 0 R", node.content.refTo.id))
-			} else {
-				data, err := p.bytesOfNodesByID(node.content.refTo)
-				if err != nil {
-					return nil, errors.Wrap(err, "")
+	if nodes != nil {
+		for i, node := range *nodes {
+			//key
+			if node.key.use == 1 {
+				buff.WriteString(fmt.Sprintf("/%s", node.key.name))
+			} else if node.key.use == 3 {
+				streamNodeIndex = i
+				continue
+			}
+			//content
+			buff.WriteString(" ")
+			if node.content.use == 1 {
+				buff.WriteString(fmt.Sprintf("%s", node.content.str))
+			} else if node.content.use == 2 {
+				if node.content.refTo.isReal {
+					buff.WriteString(fmt.Sprintf("%d 0 R", node.content.refTo.id))
+				} else {
+					data, err := p.bytesOfNodesByID(node.content.refTo)
+					if err != nil {
+						return nil, errors.Wrap(err, "")
+					}
+					buff.Write(data)
 				}
-				buff.Write(data)
+			}
+
+			if !isArray {
+				buff.WriteString("\n")
 			}
 		}
+	} //end nodes != nil
 
-		if !isArray {
-			buff.WriteString("\n")
-		}
-	}
 	if isArray {
 		buff.WriteString(" ]")
 	} else {
-		buff.WriteString(">>\n")
+		buff.WriteString(">>")
 	}
 
 	if streamNodeIndex != -1 {
@@ -149,7 +152,7 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 			}
 		}
 
-		buff.WriteString("stream\n")
+		buff.WriteString("\nstream\n")
 		if isZip {
 			var zbuff bytes.Buffer
 			zw := zlib.NewWriter(&zbuff)
@@ -165,13 +168,16 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 		} else {
 			buff.Write((*nodes)[streamNodeIndex].content.stream)
 		}
-		buff.WriteString("endstream\n")
+		buff.WriteString("endstream")
 	}
 
 	return buff.Bytes(), nil
 }
 
 func (p PdfData) isArrayNodes(nodes *pdfNodes) bool {
+	if nodes == nil {
+		return false
+	}
 	for _, node := range *nodes {
 		if node.key.use == 2 {
 			return true

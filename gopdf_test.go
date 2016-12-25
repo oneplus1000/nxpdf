@@ -7,7 +7,8 @@ import (
 )
 
 func TestRead(t *testing.T) {
-	testRead(t, "testing/pdf/pdf_from_gopdf.pdf")
+	//testRead(t, "testing/pdf/pdf_from_gopdf.pdf")
+	testRead(t, "testing/pdf/twopage.pdf")
 }
 
 func testRead(t *testing.T, path string) {
@@ -29,5 +30,5 @@ func testRead(t *testing.T, path string) {
 		t.Errorf("%+v", err)
 		return
 	}
-	ioutil.WriteFile("testing/out/pdf_from_gopdf.pdf", data, 0777)
+	ioutil.WriteFile("testing/out/out.pdf", data, 0777)
 }
