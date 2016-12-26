@@ -151,27 +151,35 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 				isZip = true
 			}
 		}
-
-		buff.WriteString("\nstream\n")
-		if isZip {
-			var zbuff bytes.Buffer
-			zw := zlib.NewWriter(&zbuff)
-			defer zw.Close()
-			_, err := zw.Write((*nodes)[streamNodeIndex].content.stream)
-			if err != nil {
-				return nil, errors.Wrap(err, "zlib.Write fail")
-			}
-			zw.Flush()
-			zbuff.WriteTo(&buff)
-			buff.WriteString("\n")
-			//fmt.Printf(">>>>>>>>>>=%d\n", len((*nodes)[streamNodeIndex].content.stream))
-		} else {
-			buff.Write((*nodes)[streamNodeIndex].content.stream)
+		stream := (*nodes)[streamNodeIndex].content.stream
+		err := p.writeStream(stream, isZip, &buff)
+		if err != nil {
+			return nil, errors.Wrap(err, "p.writeStream(...) fail")
 		}
-		buff.WriteString("endstream")
 	}
 
 	return buff.Bytes(), nil
+}
+
+func (p PdfData) writeStream(stream []byte, isZip bool, buff *bytes.Buffer) error {
+	buff.WriteString("\nstream\n")
+	if isZip {
+		var zbuff bytes.Buffer
+		zw := zlib.NewWriter(&zbuff)
+		defer zw.Close()
+		_, err := zw.Write(stream)
+		if err != nil {
+			return errors.Wrap(err, "zlib.Write fail")
+		}
+		zw.Flush()
+		buff.Write(zbuff.Bytes())
+		buff.WriteString("\n")
+		//fmt.Printf(">>>>>>>>>>=%d\n", len(zbuff.Bytes()))
+	} else {
+		buff.Write(stream)
+	}
+	buff.WriteString("endstream")
+	return nil
 }
 
 func (p PdfData) isArrayNodes(nodes *pdfNodes) bool {

@@ -74,6 +74,7 @@ func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
 						return errors.Wrap(err, "")
 					}
 				}
+
 			} else if refID != 0 && refObjID == myID {
 				//fmt.Printf("---------%s %d\n", key, refObjID.id)
 				fakeID := u.nextFakeID()

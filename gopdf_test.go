@@ -7,8 +7,8 @@ import (
 )
 
 func TestRead(t *testing.T) {
-	//testRead(t, "testing/pdf/pdf_from_gopdf.pdf")
-	testRead(t, "testing/pdf/twopage.pdf")
+	testRead(t, "testing/pdf/pdf_from_gopdf.pdf")
+	//testRead(t, "testing/pdf/twopage.pdf")
 }
 
 func testRead(t *testing.T, path string) {

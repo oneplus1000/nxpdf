@@ -28,6 +28,10 @@ func (p *pdfNodes) append(n pdfNode) {
 	*p = append(*p, n)
 }
 
+func (p *pdfNodes) remove(index int) {
+	*p = append((*p)[:index], (*p)[index+1:]...)
+}
+
 type pdfNode struct {
 	key     nodeKey
 	content nodeContent
