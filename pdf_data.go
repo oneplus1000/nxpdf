@@ -100,7 +100,7 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 	var buff bytes.Buffer
 	nodes := p.objects[id]
 	isArray := p.isArrayNodes(nodes)
-	streamNodeIndex := -1
+	indexOfStream, isStream := p.isStream(nodes)
 	if isArray {
 		buff.WriteString("[")
 	} else {
@@ -108,13 +108,11 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 	}
 
 	if nodes != nil {
-		for i, node := range *nodes {
+
+		for _, node := range *nodes {
 			//key
 			if node.key.use == 1 {
 				buff.WriteString(fmt.Sprintf("/%s", node.key.name))
-			} else if node.key.use == 3 {
-				streamNodeIndex = i
-				continue
 			}
 			//content
 			buff.WriteString(" ")
@@ -136,6 +134,7 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 				buff.WriteString("\n")
 			}
 		}
+
 	} //end nodes != nil
 
 	if isArray {
@@ -144,7 +143,7 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 		buff.WriteString(">>")
 	}
 
-	if streamNodeIndex != -1 {
+	/*if streamNodeIndex != -1 {
 		isZip := false
 		for _, node := range *nodes {
 			if node.key.use == 1 && node.key.name == "Filter" && node.content.use == 1 && node.content.str == "/FlateDecode" {
@@ -156,13 +155,23 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "p.writeStream(...) fail")
 		}
+	}*/
+	if isStream && indexOfStream != -1 {
+		p.writeStream(nodes, indexOfStream, &buff)
 	}
 
 	return buff.Bytes(), nil
 }
 
-func (p PdfData) writeStream(stream []byte, isZip bool, buff *bytes.Buffer) error {
+func (p PdfData) writeStream(nodes *pdfNodes, indexOfStream int, buff *bytes.Buffer) error {
+
+	stream := (*nodes)[indexOfStream].content.stream
+
+	/*buff.WriteString("\n<<\n")
+	buff.WriteString(fmt.Sprintf("/Length %d\n", len(stream)))
+	buff.WriteString(">>")*/
 	buff.WriteString("\nstream\n")
+	isZip := false
 	if isZip {
 		var zbuff bytes.Buffer
 		zw := zlib.NewWriter(&zbuff)
@@ -173,10 +182,12 @@ func (p PdfData) writeStream(stream []byte, isZip bool, buff *bytes.Buffer) erro
 		}
 		zw.Flush()
 		buff.Write(zbuff.Bytes())
-		buff.WriteString("\n")
 		//fmt.Printf(">>>>>>>>>>=%d\n", len(zbuff.Bytes()))
 	} else {
 		buff.Write(stream)
+		if stream[len(stream)-1] != 0xA {
+			buff.WriteString("\n")
+		}
 	}
 	buff.WriteString("endstream")
 	return nil
@@ -192,4 +203,17 @@ func (p PdfData) isArrayNodes(nodes *pdfNodes) bool {
 		}
 	}
 	return false
+}
+
+func (p PdfData) isStream(nodes *pdfNodes) (int, bool) {
+	if nodes == nil {
+		return -1, false
+	}
+
+	for i, node := range *nodes {
+		if node.key.use == 3 {
+			return i, true
+		}
+	}
+	return -1, false
 }

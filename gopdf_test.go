@@ -8,6 +8,7 @@ import (
 
 func TestRead(t *testing.T) {
 	testRead(t, "testing/pdf/pdf_from_gopdf.pdf")
+	//testRead(t, "testing/pdf/png.pdf")
 	//testRead(t, "testing/pdf/twopage.pdf")
 }
 

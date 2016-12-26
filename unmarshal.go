@@ -2,7 +2,6 @@ package gopdf
 
 import (
 	"fmt"
-	"io"
 
 	"io/ioutil"
 
@@ -60,7 +59,6 @@ func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
 			if refID != 0 && refObjID != myID {
 				u.pushRef(myID, key, refObjID)
 				if _, ok := u.unmarshalledIDs[refID]; ok {
-					fmt.Printf("--------------->%s\n", key)
 					continue
 				}
 				u.unmarshalledIDs[refID] = refObjID
@@ -69,7 +67,7 @@ func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
 					return errors.Wrap(err, "")
 				}
 				if child.Kind() == pdf.Stream {
-					err := u.pushStream(refObjID, child.Reader())
+					err := u.pushStream(refObjID, child)
 					if err != nil {
 						return errors.Wrap(err, "")
 					}
@@ -125,7 +123,7 @@ func (u *unmarshalHelper) doArray(myID objectID, parent pdf.Value) error {
 					return errors.Wrap(err, "")
 				}
 				if child.Kind() == pdf.Stream {
-					err := u.pushStream(refObjID, child.Reader())
+					err := u.pushStream(refObjID, child)
 					if err != nil {
 						return errors.Wrap(err, "")
 					}
@@ -173,16 +171,18 @@ func (u *unmarshalHelper) pushVal(myid objectID, name string, val pdf.Value) {
 	u.result.push(myid, n)
 }
 
-func (u *unmarshalHelper) pushStream(myid objectID, r io.ReadCloser) error {
-	if printDebug {
-		fmt.Printf("%s [stream]\n", myid)
-	}
+func (u *unmarshalHelper) pushStream(myid objectID, val pdf.Value) error {
 
-	stream, err := ioutil.ReadAll(r)
+	rd := val.RawReader()
+	stream, err := ioutil.ReadAll(rd)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
-	defer r.Close()
+	defer rd.Close()
+
+	if printDebug {
+		fmt.Printf("%s [stream=%d]\n", myid, len(stream))
+	}
 
 	/*var buff bytes.Buffer
 	var zbuff bytes.Buffer
