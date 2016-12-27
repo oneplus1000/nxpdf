@@ -2,7 +2,6 @@ package gopdf
 
 import (
 	"bytes"
-	"compress/zlib"
 	"fmt"
 	"sort"
 	"strconv"
@@ -143,19 +142,6 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 		buff.WriteString(">>")
 	}
 
-	/*if streamNodeIndex != -1 {
-		isZip := false
-		for _, node := range *nodes {
-			if node.key.use == 1 && node.key.name == "Filter" && node.content.use == 1 && node.content.str == "/FlateDecode" {
-				isZip = true
-			}
-		}
-		stream := (*nodes)[streamNodeIndex].content.stream
-		err := p.writeStream(stream, isZip, &buff)
-		if err != nil {
-			return nil, errors.Wrap(err, "p.writeStream(...) fail")
-		}
-	}*/
 	if isStream && indexOfStream != -1 {
 		p.writeStream(nodes, indexOfStream, &buff)
 	}
@@ -163,34 +149,16 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 	return buff.Bytes(), nil
 }
 
-func (p PdfData) writeStream(nodes *pdfNodes, indexOfStream int, buff *bytes.Buffer) error {
+func (p PdfData) writeStream(nodes *pdfNodes, indexOfStream int, buff *bytes.Buffer) {
 
 	stream := (*nodes)[indexOfStream].content.stream
-
-	/*buff.WriteString("\n<<\n")
-	buff.WriteString(fmt.Sprintf("/Length %d\n", len(stream)))
-	buff.WriteString(">>")*/
 	buff.WriteString("\nstream\n")
-	isZip := false
-	if isZip {
-		var zbuff bytes.Buffer
-		zw := zlib.NewWriter(&zbuff)
-		defer zw.Close()
-		_, err := zw.Write(stream)
-		if err != nil {
-			return errors.Wrap(err, "zlib.Write fail")
-		}
-		zw.Flush()
-		buff.Write(zbuff.Bytes())
-		//fmt.Printf(">>>>>>>>>>=%d\n", len(zbuff.Bytes()))
-	} else {
-		buff.Write(stream)
-		if stream[len(stream)-1] != 0xA {
-			buff.WriteString("\n")
-		}
+	buff.Write(stream)
+	if stream[len(stream)-1] != 0xA {
+		buff.WriteString("\n")
 	}
 	buff.WriteString("endstream")
-	return nil
+
 }
 
 func (p PdfData) isArrayNodes(nodes *pdfNodes) bool {

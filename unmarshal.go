@@ -5,6 +5,8 @@ import (
 
 	"io/ioutil"
 
+	"strings"
+
 	"github.com/oneplus1000/pdf"
 	"github.com/pkg/errors"
 )
@@ -165,7 +167,7 @@ func (u *unmarshalHelper) pushVal(myid objectID, name string, val pdf.Value) {
 		},
 		content: nodeContent{
 			use: 1,
-			str: val.String(),
+			str: format(val),
 		},
 	}
 	u.result.push(myid, n)
@@ -184,19 +186,6 @@ func (u *unmarshalHelper) pushStream(myid objectID, val pdf.Value) error {
 		fmt.Printf("%s [stream=%d]\n", myid, len(stream))
 	}
 
-	/*var buff bytes.Buffer
-	var zbuff bytes.Buffer
-	zw := zlib.NewWriter(&zbuff)
-	defer zw.Close()
-	_, err = zw.Write(stream)
-	if err != nil {
-		return errors.Wrap(err, "zlib.Write fail")
-	}
-	zw.Flush()
-	zbuff.WriteTo(&buff)
-
-	fmt.Printf("%s [stream]%d\n%+v", myid, len(stream), buff.Bytes())
-	*/
 	n := pdfNode{
 		key: nodeKey{
 			use: 3,
@@ -222,7 +211,7 @@ func (u *unmarshalHelper) pushItemVal(myid objectID, index int, val pdf.Value) {
 		},
 		content: nodeContent{
 			use: 1,
-			str: val.String(),
+			str: format(val),
 		},
 	}
 	u.result.push(myid, n)
@@ -260,6 +249,16 @@ func (u *unmarshalHelper) pushRef(myid objectID, name string, refID objectID) {
 		},
 	}
 	u.result.push(myid, n)
+}
+
+func format(val pdf.Value) string {
+	var data string
+	if val.Kind() == pdf.String {
+		data = fmt.Sprintf("(%s)", strings.Replace(val.String(), "\"", "", -1))
+	} else {
+		data = val.String()
+	}
+	return data
 }
 
 const printDebug = true
