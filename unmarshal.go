@@ -1,6 +1,7 @@
 package gopdf
 
 import (
+	"bytes"
 	"fmt"
 
 	"io/ioutil"
@@ -49,10 +50,6 @@ func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
 
 	keys := parent.Keys()
 	for _, key := range keys {
-
-		if key == "ID" {
-			continue
-		}
 
 		child := parent.Key(key)
 		if child.Kind() == pdf.Dict || child.Kind() == pdf.Stream {
@@ -148,6 +145,9 @@ func (u *unmarshalHelper) doArray(myID objectID, parent pdf.Value) error {
 				return errors.Wrap(err, "")
 			}
 		} else {
+
+			iddd := child.Kind()
+			_ = iddd
 			u.pushItemVal(myID, i, child)
 		}
 	}
@@ -253,10 +253,22 @@ func (u *unmarshalHelper) pushRef(myid objectID, name string, refID objectID) {
 func format(val pdf.Value) string {
 	var data string
 	if val.Kind() == pdf.String {
-		data = fmt.Sprintf("(%s)", strings.Replace(val.String(), "\"", "", -1))
+		if val.StringType() == 3 {
+			var buff bytes.Buffer
+			str := val.TextFromUTF16()
+			buff.WriteString("<")
+			for _, ru := range str {
+				buff.WriteString(strings.ToUpper(fmt.Sprintf("%x", ru)))
+			}
+			buff.WriteString(">")
+			data = buff.String()
+		} else {
+			data = fmt.Sprintf("(%s)", strings.Replace(val.String(), "\"", "", -1))
+		}
 	} else {
 		data = val.String()
 	}
+
 	return data
 }
 

@@ -24,10 +24,7 @@ func ReadPdf(rd io.Reader) (*PdfData, error) {
 	return unmarshal(pdfReader)
 }
 
-func MergePdf() error {
-	return nil
-}
-
-func EmptyPdf() {
-
+//MergePdf merge 2 pdf
+func MergePdf(a, b *PdfData) (*PdfData, error) {
+	return nil, nil
 }
