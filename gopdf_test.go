@@ -12,6 +12,9 @@ func TestRead(t *testing.T) {
 
 	testRead(t, "testing/pdf/twopage.pdf", "testing/out/twopage_out.pdf")
 	testRead(t, "testing/out/twopage_out.pdf", "")
+
+	testRead(t, "testing/pdf/jpg.pdf", "testing/out/jpg_out.pdf")
+	testRead(t, "testing/out/jpg_out.pdf", "")
 	//testRead(t, "testing/pdf/png.pdf")
 	//testRead(t, "testing/pdf/twopage.pdf")
 }

@@ -50,9 +50,9 @@ func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
 	keys := parent.Keys()
 	for _, key := range keys {
 
-		/*if key == "Parent" {
+		if key == "ID" {
 			continue
-		}*/
+		}
 
 		child := parent.Key(key)
 		if child.Kind() == pdf.Dict || child.Kind() == pdf.Stream {
@@ -76,7 +76,6 @@ func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
 				}
 
 			} else if refID != 0 && refObjID == myID {
-				//fmt.Printf("---------%s %d\n", key, refObjID.id)
 				fakeID := u.nextFakeID()
 				err := u.doDict(initObjectID(fakeID, false), child)
 				if err != nil {
@@ -261,4 +260,4 @@ func format(val pdf.Value) string {
 	return data
 }
 
-const printDebug = true
+const printDebug = false

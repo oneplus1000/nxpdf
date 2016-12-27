@@ -24,6 +24,10 @@ func ReadPdf(rd io.Reader) (*PdfData, error) {
 	return unmarshal(pdfReader)
 }
 
+func MergePdf() error {
+	return nil
+}
+
 func EmptyPdf() {
 
 }
