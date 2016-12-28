@@ -258,7 +258,7 @@ func format(val pdf.Value) string {
 			str := val.TextFromUTF16()
 			buff.WriteString("<")
 			for _, ru := range str {
-				buff.WriteString(strings.ToUpper(fmt.Sprintf("%x", ru)))
+				buff.WriteString(digit(fmt.Sprintf("%X", ru), 4))
 			}
 			buff.WriteString(">")
 			data = buff.String()
@@ -270,6 +270,17 @@ func format(val pdf.Value) string {
 	}
 
 	return data
+}
+
+func digit(n string, digit int) string {
+	size := len(n)
+	var buff bytes.Buffer
+	for size < digit {
+		buff.WriteString("0")
+		size++
+	}
+	buff.WriteString(n)
+	return buff.String()
 }
 
 const printDebug = false
