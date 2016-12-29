@@ -7,16 +7,19 @@ import (
 )
 
 func TestRead(t *testing.T) {
-	//testRead(t, "testing/pdf/pdf_from_gopdf.pdf", "testing/out/pdf_from_gopdf_out.pdf")
-	//testRead(t, "testing/out/pdf_from_gopdf_out.pdf", "")
+	testRead(t, "testing/pdf/pdf_from_gopdf.pdf", "testing/out/pdf_from_gopdf_out.pdf")
+	testRead(t, "testing/out/pdf_from_gopdf_out.pdf", "")
 
-	testRead(t, "testing/pdf/twopage.pdf", "testing/out/twopage_out.pdf")
-	testRead(t, "testing/out/twopage_out.pdf", "")
+	//testRead(t, "testing/pdf/twopage.pdf", "testing/out/twopage_out.pdf")
+	//testRead(t, "testing/out/twopage_out.pdf", "")
 
 	//testRead(t, "testing/pdf/jpg.pdf", "testing/out/jpg_out.pdf")
 	//testRead(t, "testing/out/jpg_out.pdf", "")
 	//testRead(t, "testing/pdf/png.pdf")
 	//testRead(t, "testing/pdf/twopage.pdf")
+
+	testRead(t, "testing/pdf/pdf_from_chrome_50_win10.pdf", "testing/out/pdf_from_chrome_50_win10_out.pdf")
+	testRead(t, "testing/out/pdf_from_chrome_50_win10_out.pdf", "")
 }
 
 func testRead(t *testing.T, path string, outpath string) {

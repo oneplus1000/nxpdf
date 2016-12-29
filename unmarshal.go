@@ -39,120 +39,128 @@ func newUnmarshalHelper(trailer pdf.Value) *unmarshalHelper {
 
 func (u *unmarshalHelper) start() error {
 	parent := u.trailer
-	err := u.doDict(initObjectID(0, true), parent)
+	objID := initObjectID(0, true)
+	/*err := u.doDict(initObjectID(0, true), parent)
+	if err != nil {
+		return errors.Wrap(err, "")
+	}*/
+	err := u.doing(objID, 0, parent)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
 	return nil
 }
 
-func (u *unmarshalHelper) doDict(myID objectID, parent pdf.Value) error {
+func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Value) error {
 
-	keys := parent.Keys()
-	for _, key := range keys {
+	parentKeys := parent.Keys()
+	parentSize := 0
+	parentKind := parent.Kind()
+	if parentKind == pdf.Array {
+		parentSize = parent.Len()
+	} else if parentKind == pdf.Dict || parentKind == pdf.Stream {
+		parentSize = len(parentKeys)
+	}
 
-		child := parent.Key(key)
-		if child.Kind() == pdf.Dict || child.Kind() == pdf.Stream {
-			refID, _ := child.RefTo()
-			refObjID := initObjectID(refID, true)
-			if refID != 0 && refObjID != myID {
-				u.pushRef(myID, key, refObjID)
-				if _, ok := u.unmarshalledIDs[refID]; ok {
-					continue
+	for i := 0; i < parentSize; i++ {
+
+		var child pdf.Value
+		var childKey string
+		if parentKind == pdf.Array {
+			child = parent.Index(i)
+		} else if parentKind == pdf.Dict || parentKind == pdf.Stream {
+			child = parent.Key(parentKeys[i])
+			childKey = parentKeys[i]
+		}
+
+		childKind := child.Kind()
+		childRefID, _ := child.RefTo()
+
+		if childRefID == 31 {
+			childRefID = 31
+		}
+		if childKind == pdf.Dict || childKind == pdf.Array || childKind == pdf.Stream {
+			if isEmbedObj(myID, fromRealID, childRefID) {
+				fakeRefObjID := initObjectID(u.nextFakeID(), false)
+				if parentKind == pdf.Array {
+					u.pushItemRef(myID, i, fakeRefObjID)
+				} else if parentKind == pdf.Dict {
+					u.pushRef(myID, childKey, fakeRefObjID)
 				}
-				u.unmarshalledIDs[refID] = refObjID
-				err := u.doDict(refObjID, child)
+				err := u.doing(fakeRefObjID, fromRealID, child)
 				if err != nil {
 					return errors.Wrap(err, "")
 				}
-				if child.Kind() == pdf.Stream {
-					err := u.pushStream(refObjID, child)
+
+				if childKind == pdf.Stream {
+					err := u.pushStream(fakeRefObjID, child)
 					if err != nil {
 						return errors.Wrap(err, "")
 					}
 				}
 
-			} else if refID != 0 && refObjID == myID {
-				fakeID := u.nextFakeID()
-				err := u.doDict(initObjectID(fakeID, false), child)
+			} else {
+				isDup := false
+				childRefObjID := initObjectID(childRefID, true)
+				if oldChildRefObjID, ok := u.unmarshalledIDs[childRefID]; ok {
+					childRefObjID = oldChildRefObjID
+					isDup = true
+				} else {
+					u.unmarshalledIDs[childRefID] = childRefObjID
+				}
+				if parentKind == pdf.Array {
+					u.pushItemRef(myID, i, childRefObjID)
+				} else if parentKind == pdf.Dict {
+					u.pushRef(myID, childKey, childRefObjID)
+				}
+				if isDup {
+					continue
+				}
+				err := u.doing(childRefObjID, childRefObjID.id, child)
 				if err != nil {
 					return errors.Wrap(err, "")
 				}
-				u.pushRef(myID, key, initObjectID(fakeID, false))
-			} else {
-				u.pushVal(myID, key, child)
+
+				if childKind == pdf.Stream {
+					err := u.pushStream(childRefObjID, child)
+					if err != nil {
+						return errors.Wrap(err, "")
+					}
+				}
 			}
 
-		} else if child.Kind() == pdf.Array {
-			fakeID := u.nextFakeID()
-			err := u.doArray(initObjectID(fakeID, false), child)
-			if err != nil {
-				return errors.Wrap(err, "")
-			}
-			u.pushRef(myID, key, initObjectID(fakeID, false))
 		} else {
-			u.pushVal(myID, key, child)
+			if parentKind == pdf.Array {
+				u.pushItemVal(myID, i, child)
+			} else if parentKind == pdf.Dict || parentKind == pdf.Stream {
+				u.pushVal(myID, childKey, child)
+			}
 		}
 	}
+
 	return nil
+}
+
+func isEmbedObj(myID objectID, fromRealID uint32, childRefID uint32) bool {
+	childRefObjID := initObjectID(childRefID, true)
+	if myID.isReal {
+		if myID == childRefObjID { //embed
+			return true
+		}
+		return false //ref
+	}
+
+	fromRealObjID := initObjectID(fromRealID, true)
+	if fromRealObjID == childRefObjID { //embed
+		return true
+	}
+	return false //ref
+
 }
 
 func (u *unmarshalHelper) nextFakeID() uint32 {
 	u.fakeID++
 	return u.fakeID
-}
-
-func (u *unmarshalHelper) doArray(myID objectID, parent pdf.Value) error {
-
-	size := parent.Len()
-	for i := 0; i < size; i++ {
-		child := parent.Index(i)
-		if child.Kind() == pdf.Dict || child.Kind() == pdf.Stream {
-			refID, _ := child.RefTo()
-			refObjID := initObjectID(refID, true)
-			if refID != 0 && refObjID != myID {
-				u.pushItemRef(myID, i, refObjID)
-				if _, ok := u.unmarshalledIDs[refID]; ok {
-					continue
-				}
-				u.unmarshalledIDs[refID] = refObjID
-				err := u.doDict(refObjID, child)
-				if err != nil {
-					return errors.Wrap(err, "")
-				}
-				if child.Kind() == pdf.Stream {
-					err := u.pushStream(refObjID, child)
-					if err != nil {
-						return errors.Wrap(err, "")
-					}
-				}
-			} else if refID != 0 && refObjID == myID {
-				fakeID := u.nextFakeID()
-				err := u.doDict(initObjectID(fakeID, false), child)
-				if err != nil {
-					return errors.Wrap(err, "")
-				}
-				u.pushItemRef(myID, i, initObjectID(fakeID, false))
-			} else {
-				u.pushItemVal(myID, i, child)
-			}
-
-		} else if child.Kind() == pdf.Array {
-			fakeID := u.nextFakeID()
-			err := u.doArray(initObjectID(fakeID, false), child)
-			u.pushItemRef(myID, i, initObjectID(fakeID, false))
-			if err != nil {
-				return errors.Wrap(err, "")
-			}
-		} else {
-
-			iddd := child.Kind()
-			_ = iddd
-			u.pushItemVal(myID, i, child)
-		}
-	}
-
-	return nil
 }
 
 func (u *unmarshalHelper) pushVal(myid objectID, name string, val pdf.Value) {
@@ -283,4 +291,4 @@ func digit(n string, digit int) string {
 	return buff.String()
 }
 
-const printDebug = false
+const printDebug = true
