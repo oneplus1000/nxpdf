@@ -26,5 +26,5 @@ func ReadPdf(rd io.Reader) (*PdfData, error) {
 
 //MergePdf merge 2 pdf
 func MergePdf(a, b *PdfData) (*PdfData, error) {
-	return nil, nil
+	return merge(a, b)
 }
