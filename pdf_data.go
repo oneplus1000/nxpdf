@@ -1,4 +1,4 @@
-package gopdf
+package nxpdf
 
 import (
 	"bytes"

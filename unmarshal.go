@@ -1,4 +1,4 @@
-package gopdf
+package nxpdf
 
 import (
 	"bytes"
@@ -62,6 +62,10 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 		parentSize = len(parentKeys)
 	}
 
+	if myID.id == 79 {
+		myID.id = 79
+	}
+
 	for i := 0; i < parentSize; i++ {
 
 		var child pdf.Value
@@ -75,10 +79,6 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 
 		childKind := child.Kind()
 		childRefID, _ := child.RefTo()
-
-		if childRefID == 31 {
-			childRefID = 31
-		}
 		if childKind == pdf.Dict || childKind == pdf.Array || childKind == pdf.Stream {
 			if isEmbedObj(myID, fromRealID, childRefID) {
 				fakeRefObjID := initObjectID(u.nextFakeID(), false)
@@ -271,13 +271,21 @@ func format(val pdf.Value) string {
 			buff.WriteString(">")
 			data = buff.String()
 		} else {
-			data = fmt.Sprintf("(%s)", strings.Replace(val.String(), "\"", "", -1))
+			data = fmt.Sprintf("(%s)", cleanString(val.String()))
 		}
 	} else {
 		data = val.String()
+		data = strings.Replace(data, " ", "#20", -1)
 	}
 
 	return data
+}
+
+func cleanString(str string) string {
+	str = strings.Replace(str, "\"", "", -1)
+	str = strings.Replace(str, "(", "\\(", -1)
+	str = strings.Replace(str, ")", "\\)", -1)
+	return str
 }
 
 func digit(n string, digit int) string {
