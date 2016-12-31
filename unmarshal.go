@@ -62,10 +62,6 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 		parentSize = len(parentKeys)
 	}
 
-	if myID.id == 79 {
-		myID.id = 79
-	}
-
 	for i := 0; i < parentSize; i++ {
 
 		var child pdf.Value
@@ -75,6 +71,10 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 		} else if parentKind == pdf.Dict || parentKind == pdf.Stream {
 			child = parent.Key(parentKeys[i])
 			childKey = parentKeys[i]
+		}
+
+		if myID.id == 2 {
+			myID.id = 2
 		}
 
 		childKind := child.Kind()
@@ -130,12 +130,22 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 			}
 
 		} else {
+
+			//if isEmbedObj(myID, fromRealID, childRefID) {
 			if parentKind == pdf.Array {
 				u.pushItemVal(myID, i, child)
 			} else if parentKind == pdf.Dict || parentKind == pdf.Stream {
 				u.pushVal(myID, childKey, child)
 			}
+			//} else {
+			//	fmt.Printf("ccccccccc---------------------------%d\n", myID.id)
+			//}
 		}
+	}
+
+	if myID.isReal && parentSize == 0 { //realID but empty
+		var empty pdfNodes
+		u.result.objects[myID] = &empty
 	}
 
 	return nil
@@ -299,4 +309,4 @@ func digit(n string, digit int) string {
 	return buff.String()
 }
 
-const printDebug = true
+const printDebug = false
