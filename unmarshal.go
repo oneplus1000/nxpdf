@@ -131,15 +131,21 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 
 		} else {
 
-			//if isEmbedObj(myID, fromRealID, childRefID) {
-			if parentKind == pdf.Array {
-				u.pushItemVal(myID, i, child)
-			} else if parentKind == pdf.Dict || parentKind == pdf.Stream {
-				u.pushVal(myID, childKey, child)
+			if isEmbedObj(myID, fromRealID, childRefID) {
+				if parentKind == pdf.Array {
+					u.pushItemVal(myID, i, child)
+				} else if parentKind == pdf.Dict || parentKind == pdf.Stream {
+					u.pushVal(myID, childKey, child)
+				}
+			} else {
+				childRefObjID := initObjectID(childRefID, true)
+				if parentKind == pdf.Array {
+					u.pushItemRef(myID, i, childRefObjID)
+				} else if parentKind == pdf.Dict || parentKind == pdf.Stream {
+					u.pushRef(myID, childKey, childRefObjID)
+				}
+				u.pushSingleValObj(childRefObjID, "", child)
 			}
-			//} else {
-			//	fmt.Printf("ccccccccc---------------------------%d\n", myID.id)
-			//}
 		}
 	}
 
@@ -184,6 +190,23 @@ func (u *unmarshalHelper) pushVal(myid objectID, name string, val pdf.Value) {
 		},
 		content: nodeContent{
 			use: 1,
+			str: format(val),
+		},
+	}
+	u.result.push(myid, n)
+}
+
+func (u *unmarshalHelper) pushSingleValObj(myid objectID, name string, val pdf.Value) {
+	if printDebug {
+		fmt.Printf("%s %s %s\n", myid, name, val.String())
+	}
+	n := pdfNode{
+		key: nodeKey{
+			use:  4,
+			name: name,
+		},
+		content: nodeContent{
+			use: 4,
 			str: format(val),
 		},
 	}
@@ -283,6 +306,8 @@ func format(val pdf.Value) string {
 		} else {
 			data = fmt.Sprintf("(%s)", cleanString(val.String()))
 		}
+	} else if val.Kind() == pdf.Null {
+		data = "null"
 	} else {
 		data = val.String()
 		data = strings.Replace(data, " ", "#20", -1)

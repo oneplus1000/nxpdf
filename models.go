@@ -38,13 +38,13 @@ type pdfNode struct {
 }
 
 type nodeKey struct {
-	use   int // 1 = name , 2 = index , 3 = stream
+	use   int // 1 = name , 2 = index , 3 = stream , 4 = single obj
 	name  string
 	index int
 }
 
 type nodeContent struct {
-	use    int // 1 = str , 2 refTp , 3 = stream
+	use    int // 1 = str , 2 refTp , 3 = stream , 4 = single obj
 	str    string
 	refTo  objectID
 	stream []byte

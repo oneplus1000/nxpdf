@@ -100,8 +100,11 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 	nodes := p.objects[id]
 	isArray := p.isArrayNodes(nodes)
 	indexOfStream, isStream := p.isStream(nodes)
+	isSingleValObj := p.isSingleValObjNodes(nodes)
 	if isArray {
 		buff.WriteString("[")
+	} else if isSingleValObj {
+		buff.WriteString("\n")
 	} else {
 		buff.WriteString("\n<<\n")
 	}
@@ -115,7 +118,7 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 			}
 			//content
 			buff.WriteString(" ")
-			if node.content.use == 1 {
+			if node.content.use == 1 || node.content.use == 4 {
 				buff.WriteString(fmt.Sprintf("%s", node.content.str))
 			} else if node.content.use == 2 {
 				if node.content.refTo.isReal {
@@ -129,7 +132,7 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 				}
 			}
 
-			if !isArray {
+			if !isArray && !isSingleValObj {
 				buff.WriteString("\n")
 			}
 		}
@@ -138,6 +141,8 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 
 	if isArray {
 		buff.WriteString(" ]")
+	} else if isSingleValObj {
+		buff.WriteString("")
 	} else {
 		buff.WriteString(">>")
 	}
@@ -167,6 +172,18 @@ func (p PdfData) isArrayNodes(nodes *pdfNodes) bool {
 	}
 	for _, node := range *nodes {
 		if node.key.use == 2 {
+			return true
+		}
+	}
+	return false
+}
+
+func (p PdfData) isSingleValObjNodes(nodes *pdfNodes) bool {
+	if nodes == nil {
+		return false
+	}
+	for _, node := range *nodes {
+		if node.key.use == 4 {
 			return true
 		}
 	}
