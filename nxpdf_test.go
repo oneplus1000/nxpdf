@@ -28,7 +28,47 @@ func TestRead(t *testing.T) {
 }
 
 func TestMerge(t *testing.T) {
+	testMerge(t, "testing/pdf/twopage.pdf", "testing/pdf/pdf_from_gopdf.pdf", "testing/out/twopage_and_pdf_from_gopdf_out.pdf")
+}
 
+func testMerge(t *testing.T, path1 string, path2 string, outpath string) {
+	a, err := read(path1)
+	if err != nil {
+		t.Errorf("%+v", err)
+		return
+	}
+	b, err := read(path2)
+	if err != nil {
+		t.Errorf("%+v", err)
+		return
+	}
+	c, err := MergePdf(a, b)
+	if err != nil {
+		t.Errorf("%+v", err)
+		return
+	}
+
+	data, err := c.Bytes()
+	if err != nil {
+		t.Errorf("%+v", err)
+		return
+	}
+	if outpath != "" {
+		ioutil.WriteFile(outpath, data, 0777)
+	}
+}
+
+func read(path1 string) (*PdfData, error) {
+	data, err := ioutil.ReadFile(path1)
+	if err != nil {
+		return nil, err
+	}
+	r := bytes.NewReader(data)
+	pdfData, err := ReadPdf(r)
+	if err != nil {
+		return nil, err
+	}
+	return pdfData, nil
 }
 
 func testRead(t *testing.T, path string, outpath string) {

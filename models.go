@@ -24,6 +24,10 @@ func initObjectID(id uint32, isReal bool) objectID {
 
 type pdfNodes []pdfNode
 
+func (p *pdfNodes) len() int {
+	return len(*p)
+}
+
 func (p *pdfNodes) append(n pdfNode) {
 	*p = append(*p, n)
 }
@@ -35,6 +39,10 @@ func (p *pdfNodes) remove(index int) {
 type pdfNode struct {
 	key     nodeKey
 	content nodeContent
+}
+
+func (p pdfNode) clone() pdfNode {
+	return p
 }
 
 type nodeKey struct {
