@@ -1,9 +1,9 @@
 package nxpdf
 
-import "github.com/pkg/errors"
+import "fmt"
 
 func merge(a, b *PdfData) (*PdfData, error) {
-	maxRealIDOfA, maxFakeIDOfA, err := maxID(a)
+	/*maxRealIDOfA, maxFakeIDOfA, err := maxID(a)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
@@ -16,9 +16,17 @@ func merge(a, b *PdfData) (*PdfData, error) {
 	c := (*a)
 	for objID, obj := range newB.objects {
 		c.objects[objID] = obj
+	}*/
+	for objID, nodes := range b.objects {
+		for _, node := range *nodes {
+			if node.key.use == 1 && node.key.name == "Type" && node.content.use == 1 && node.content.str == "/Catalog" {
+				fmt.Printf("%d\n", objID.id)
+				break
+			}
+		}
 	}
 
-	return &c, nil
+	return nil, nil
 }
 
 func shiftID(src *PdfData, realIDOffset uint32, fakeIDOffset uint32) (*PdfData, error) {
@@ -53,10 +61,10 @@ func maxID(a *PdfData) (uint32, uint32, error) {
 	maxRealID := uint32(0)
 	maxFakeID := uint32(0)
 	for objID := range a.objects {
-		if objID.id > maxRealID {
+		if objID.isReal && objID.id > maxRealID {
 			maxRealID = objID.id
 		}
-		if objID.id > maxFakeID {
+		if !objID.isReal && objID.id > maxFakeID {
 			maxFakeID = objID.id
 		}
 	}

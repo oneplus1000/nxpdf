@@ -73,10 +73,6 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 			childKey = parentKeys[i]
 		}
 
-		if myID.id == 2 {
-			myID.id = 2
-		}
-
 		childKind := child.Kind()
 		childRefID, _ := child.RefTo()
 		if childKind == pdf.Dict || childKind == pdf.Array || childKind == pdf.Stream {
