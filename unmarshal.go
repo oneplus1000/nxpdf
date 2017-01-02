@@ -39,7 +39,7 @@ func newUnmarshalHelper(trailer pdf.Value) *unmarshalHelper {
 
 func (u *unmarshalHelper) start() error {
 	parent := u.trailer
-	objID := initObjectID(0, true)
+	objID := initObjectIDReal(0)
 	/*err := u.doDict(initObjectID(0, true), parent)
 	if err != nil {
 		return errors.Wrap(err, "")
@@ -77,7 +77,7 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 		childRefID, _ := child.RefTo()
 		if childKind == pdf.Dict || childKind == pdf.Array || childKind == pdf.Stream {
 			if isEmbedObj(myID, fromRealID, childRefID) {
-				fakeRefObjID := initObjectID(u.nextFakeID(), false)
+				fakeRefObjID := initObjectIDFake(u.nextFakeID(), fromRealID)
 				if parentKind == pdf.Array {
 					u.pushItemRef(myID, i, fakeRefObjID)
 				} else if parentKind == pdf.Dict {
@@ -97,7 +97,7 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 
 			} else {
 				isDup := false
-				childRefObjID := initObjectID(childRefID, true)
+				childRefObjID := initObjectIDReal(childRefID)
 				if oldChildRefObjID, ok := u.unmarshalledIDs[childRefID]; ok {
 					childRefObjID = oldChildRefObjID
 					isDup = true
@@ -134,7 +134,7 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 					u.pushVal(myID, childKey, child)
 				}
 			} else {
-				childRefObjID := initObjectID(childRefID, true)
+				childRefObjID := initObjectIDReal(childRefID)
 				if parentKind == pdf.Array {
 					u.pushItemRef(myID, i, childRefObjID)
 				} else if parentKind == pdf.Dict || parentKind == pdf.Stream {
@@ -154,7 +154,7 @@ func (u *unmarshalHelper) doing(myID objectID, fromRealID uint32, parent pdf.Val
 }
 
 func isEmbedObj(myID objectID, fromRealID uint32, childRefID uint32) bool {
-	childRefObjID := initObjectID(childRefID, true)
+	childRefObjID := initObjectIDReal(childRefID)
 	if myID.isReal {
 		if myID == childRefObjID { //embed
 			return true
@@ -162,7 +162,7 @@ func isEmbedObj(myID objectID, fromRealID uint32, childRefID uint32) bool {
 		return false //ref
 	}
 
-	fromRealObjID := initObjectID(fromRealID, true)
+	fromRealObjID := initObjectIDReal(fromRealID)
 	if fromRealObjID == childRefObjID { //embed
 		return true
 	}

@@ -3,8 +3,9 @@ package nxpdf
 import "fmt"
 
 type objectID struct {
-	isReal bool
-	id     uint32
+	isReal     bool
+	id         uint32
+	fromRealID uint32
 }
 
 func (o objectID) String() string {
@@ -15,10 +16,19 @@ func (o objectID) String() string {
 
 }
 
-func initObjectID(id uint32, isReal bool) objectID {
+func initObjectIDReal(id uint32) objectID {
 	var o objectID
 	o.id = id
-	o.isReal = isReal
+	o.isReal = true
+	o.fromRealID = id
+	return o
+}
+
+func initObjectIDFake(id uint32, fromRealID uint32) objectID {
+	var o objectID
+	o.id = id
+	o.isReal = false
+	o.fromRealID = fromRealID
 	return o
 }
 

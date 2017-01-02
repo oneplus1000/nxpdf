@@ -44,7 +44,7 @@ func (p PdfData) Bytes() ([]byte, error) {
 	buff.WriteString("%PDF-1.7")
 	var xreftable []int
 	for _, realID := range realIDs {
-		realObjID := initObjectID(uint32(realID), true)
+		realObjID := initObjectIDReal(uint32(realID))
 		if realID > 0 {
 			buff.WriteString("\n")
 			xreftable = append(xreftable, buff.Len())
