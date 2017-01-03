@@ -24,7 +24,7 @@ func ReadPdf(rd io.Reader) (*PdfData, error) {
 	return unmarshal(pdfReader)
 }
 
-//MergePdf merge 2 pdf
-func MergePdf(a, b *PdfData) (*PdfData, error) {
+//MergePdf merge b into a
+func MergePdf(a, b *PdfData) error {
 	return merge(a, b)
 }

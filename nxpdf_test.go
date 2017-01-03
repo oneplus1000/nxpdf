@@ -28,27 +28,32 @@ func TestRead(t *testing.T) {
 }
 
 func TestMerge(t *testing.T) {
-	//testMerge(t, "testing/pdf/twopage.pdf", "testing/pdf/pdf_from_gopdf.pdf", "testing/out/twopage_and_pdf_from_gopdf_out.pdf")
+	testMerge(t, "testing/pdf/twopage.pdf", "testing/pdf/pdf_from_gopdf.pdf", "testing/out/twopage_and_pdf_from_gopdf_out.pdf")
+
+	testMerge(t, "testing/pdf/jpg.pdf", "testing/pdf/pdf_from_docx.pdf", "testing/out/jpg_and_pdf_from_docx_out.pdf")
 }
 
 func testMerge(t *testing.T, path1 string, path2 string, outpath string) {
+
 	a, err := read(path1)
 	if err != nil {
 		t.Errorf("%+v", err)
 		return
 	}
+
 	b, err := read(path2)
 	if err != nil {
 		t.Errorf("%+v", err)
 		return
 	}
-	c, err := MergePdf(a, b)
+
+	err = MergePdf(a, b)
 	if err != nil {
 		t.Errorf("%+v", err)
 		return
 	}
 
-	data, err := c.Bytes()
+	data, err := a.Bytes()
 	if err != nil {
 		t.Errorf("%+v", err)
 		return

@@ -1,8 +1,18 @@
 package nxpdf
 
-import "fmt"
+import (
+	"fmt"
 
-func merge(a, b *PdfData) (*PdfData, error) {
+	"github.com/pkg/errors"
+)
+
+//ErrCannotFindPdfObjectCatalog  can not find pdf object Catalog
+var ErrCannotFindPdfObjectCatalog = errors.New("can not find pdf object Catalog")
+
+//ErrCannotFindPdfObjectPages  can not find pdf object Pages
+var ErrCannotFindPdfObjectPages = errors.New("can not find pdf object Pages")
+
+func merge(a, b *PdfData) error {
 	/*maxRealIDOfA, maxFakeIDOfA, err := maxID(a)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
@@ -17,16 +27,130 @@ func merge(a, b *PdfData) (*PdfData, error) {
 	for objID, obj := range newB.objects {
 		c.objects[objID] = obj
 	}*/
-	for objID, nodes := range b.objects {
-		for _, node := range *nodes {
-			if node.key.use == 1 && node.key.name == "Type" && node.content.use == 1 && node.content.str == "/Catalog" {
-				fmt.Printf("%d\n", objID.id)
-				break
-			}
+
+	maxRealIDOfA, maxFakeIDOfA, err := maxID(a)
+
+	//fmt.Printf("%d %d\n", maxRealIDOfA, maxFakeIDOfA)
+
+	//remove Catalog,Trailer b
+	tempB, err := shiftID(b, maxRealIDOfA+1, maxFakeIDOfA+1)
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+	//tempB := b
+
+	err = removeTrailer(tempB)
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+
+	/*err = removeCatalog(tempB)
+	if err != nil {
+		return errors.Wrap(err, "")
+	}*/
+
+	//merge Pages a and b together (into a)
+	err = mergePages(a, tempB, maxRealIDOfA)
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+
+	return nil
+}
+
+func mergePages(a, b *PdfData, maxRealIDOfA uint32) error {
+
+	results, err := newQuery(a).findDict("Type", "/Pages")
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+
+	if len(results) <= 0 {
+		return ErrCannotFindPdfObjectPages
+	}
+	pagesOfA := results[0]
+
+	results, err = newQuery(b).findDict("Type", "/Pages")
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+
+	if len(results) <= 0 {
+		return ErrCannotFindPdfObjectPages
+	}
+	pagesOfB := results[0]
+
+	var kidsIDOfA objectID
+	for _, nodeOfA := range *a.objects[pagesOfA.objID] {
+		if nodeOfA.key.use == 1 && nodeOfA.key.name == "Kids" {
+			kidsIDOfA = nodeOfA.content.refTo
+			break
 		}
 	}
 
-	return nil, nil
+	var kidsIDOfB objectID
+	for _, nodeOfB := range *b.objects[pagesOfB.objID] {
+		if nodeOfB.key.use == 1 && nodeOfB.key.name == "Kids" {
+			kidsIDOfB = nodeOfB.content.refTo
+			break
+		}
+	}
+
+	//merge
+	for objID, obj := range b.objects {
+		if objID != kidsIDOfB {
+			a.objects[objID] = obj
+		}
+	}
+
+	for _, node := range *b.objects[kidsIDOfB] {
+		a.objects[kidsIDOfA].append(node)
+	}
+
+	count := a.objects[kidsIDOfA].len()
+	for i, node := range *a.objects[pagesOfA.objID] {
+		if node.key.use == 1 && node.key.name == "Count" {
+			(*a.objects[pagesOfA.objID])[i].content.str = fmt.Sprintf("%d", count)
+		}
+	}
+
+	return nil
+}
+
+func removeTrailer(src *PdfData) error {
+	trailerObjID := initObjectIDReal(0) //Trailer away 0
+	delete(src.objects, trailerObjID)
+	return nil
+}
+
+func removeCatalog(src *PdfData) error {
+	results, err := newQuery(src).findDict("Type", "/Catalog")
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+	if len(results) <= 0 {
+		return ErrCannotFindPdfObjectCatalog
+	}
+	delete(src.objects, results[0].objID)
+	return nil
+}
+
+func removePages(src *PdfData) error {
+	results, err := newQuery(src).findDict("Type", "/Pages")
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+	if len(results) <= 0 {
+		return ErrCannotFindPdfObjectPages
+	}
+	delete(src.objects, results[0].objID)
+	return nil
+}
+
+func clonePdfData(src *PdfData) *PdfData {
+	dest := newPdfData()
+	dest.objects = src.objects
+	return dest
 }
 
 func shiftID(src *PdfData, realIDOffset uint32, fakeIDOffset uint32) (*PdfData, error) {

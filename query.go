@@ -1,7 +1,5 @@
 package nxpdf
 
-import "fmt"
-
 type query struct {
 	pdfdata *PdfData
 }
@@ -12,19 +10,27 @@ func newQuery(p *PdfData) *query {
 	return &q
 }
 
-func (q *query) findDict(keyname string, val string) error {
+func (q *query) findDict(keyname string, val string) ([]queryResult, error) {
+	var results []queryResult
 	for objID, nodes := range q.pdfdata.objects {
 		for _, node := range *nodes {
-			if node.key.use == 1 && node.key.name == keyname && node.content.use == 1 && node.content.str == val {
-				fmt.Printf("%d\n", objID.id)
-				break
+			if node.key.use == 1 &&
+				node.key.name == keyname &&
+				node.content.use == 1 &&
+				node.content.str == val {
+
+				var result queryResult
+				result.objID = objID
+				result.node = node
+				results = append(results, result)
+
 			}
 		}
 	}
-	return nil
+	return results, nil
 }
 
-//
 type queryResult struct {
 	objID objectID
+	node  pdfNode
 }
