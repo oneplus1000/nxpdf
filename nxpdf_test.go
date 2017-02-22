@@ -33,6 +33,23 @@ func TestMerge(t *testing.T) {
 	testMerge(t, "testing/pdf/jpg.pdf", "testing/pdf/pdf_from_docx.pdf", "testing/out/jpg_and_pdf_from_docx_out.pdf")
 }
 
+func TestAddFont(t *testing.T) {
+	p, err := getPdfData("testing/pdf/twopage.pdf")
+	if err != nil {
+		t.Errorf("%+v", err)
+		return
+	}
+	AddTTF(p, nil)
+}
+
+func getPdfData(path string) (*PdfData, error) {
+	p, err := read(path)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
 func testMerge(t *testing.T, path1 string, path2 string, outpath string) {
 
 	a, err := read(path1)

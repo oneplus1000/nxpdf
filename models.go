@@ -28,7 +28,6 @@ func initObjectIDFake(id uint32, fromRealID uint32) objectID {
 	var o objectID
 	o.id = id
 	o.isReal = false
-	//o.fromRealID = fromRealID
 	return o
 }
 

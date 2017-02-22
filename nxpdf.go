@@ -28,3 +28,8 @@ func ReadPdf(rd io.Reader) (*PdfData, error) {
 func MergePdf(a, b *PdfData) error {
 	return merge(a, b)
 }
+
+//AddTTF add ttf to pdf
+func AddTTF(p *PdfData, ttf io.Reader) error {
+	return nil
+}

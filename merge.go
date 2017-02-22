@@ -13,41 +13,20 @@ var ErrCannotFindPdfObjectCatalog = errors.New("can not find pdf object Catalog"
 var ErrCannotFindPdfObjectPages = errors.New("can not find pdf object Pages")
 
 func merge(a, b *PdfData) error {
-	/*maxRealIDOfA, maxFakeIDOfA, err := maxID(a)
-	if err != nil {
-		return nil, errors.Wrap(err, "")
-	}
-
-	newB, err := shiftID(b, maxRealIDOfA+1, maxFakeIDOfA+1)
-	if err != nil {
-		return nil, errors.Wrap(err, "")
-	}
-
-	c := (*a)
-	for objID, obj := range newB.objects {
-		c.objects[objID] = obj
-	}*/
 
 	maxRealIDOfA, maxFakeIDOfA, err := maxID(a)
 
-	//fmt.Printf("%d %d\n", maxRealIDOfA, maxFakeIDOfA)
-
-	//remove Catalog,Trailer b
+	//shift objID of b
 	tempB, err := shiftID(b, maxRealIDOfA+1, maxFakeIDOfA+1)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
-	//tempB := b
 
+	//remove triler of b
 	err = removeTrailer(tempB)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
-
-	/*err = removeCatalog(tempB)
-	if err != nil {
-		return errors.Wrap(err, "")
-	}*/
 
 	//merge Pages a and b together (into a)
 	err = mergePages(a, tempB, maxRealIDOfA)
