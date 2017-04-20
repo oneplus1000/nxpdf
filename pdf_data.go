@@ -11,7 +11,8 @@ import (
 
 //PdfData hold data of pdf file
 type PdfData struct {
-	objects map[objectID]*pdfNodes
+	subsetFonts map[FontRef](*subsetFont)
+	objects     map[objectID]*pdfNodes
 }
 
 func newPdfData() *PdfData {
@@ -30,8 +31,14 @@ func (p *PdfData) push(myID objectID, node pdfNode) {
 	}
 }
 
-//Bytes return []byte of pdf file
-func (p PdfData) Bytes() ([]byte, error) {
+//build build pdf
+func (p *PdfData) build() error {
+
+	return nil
+}
+
+//bytes return []byte of pdf file
+func (p PdfData) bytes() ([]byte, error) {
 	var buff bytes.Buffer
 	var buffTrailer bytes.Buffer
 	var realIDs []int
