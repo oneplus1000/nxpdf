@@ -13,11 +13,13 @@ func addFontFile(p *PdfData, fontfile []byte) (FontRef, error) {
 		p.subsetFonts = make(map[FontRef](*subsetFont))
 	}
 
-	var ss subsetFont
-	ss.fontfileRaw = fontfile
-	p.subsetFonts[FontRef(hash)] = &ss
+	subsetFont := newSubsetFont(fontfile)
+	err = subsetFont.init()
+	if err != nil {
+		return FontRefEmpty, errors.Wrap(err, "subsetFont.init() fail")
+	}
 
-	var fontRef FontRef
-	fontRef = FontRef(hash)
+	p.subsetFonts[FontRef(hash)] = subsetFont
+	fontRef := FontRef(hash)
 	return fontRef, nil
 }
