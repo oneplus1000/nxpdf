@@ -34,6 +34,10 @@ func (p *PdfData) push(myID objectID, node pdfNode) {
 //build build pdf
 func (p *PdfData) build() error {
 
+	for range p.subsetFonts {
+		//TODO: append sub set font to p.objects
+	}
+
 	return nil
 }
 
