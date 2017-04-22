@@ -181,11 +181,11 @@ func (u *unmarshalHelper) pushVal(myid objectID, name string, val pdf.Value) {
 	}
 	n := pdfNode{
 		key: nodeKey{
-			use:  1,
+			use:  NodeKeyUseName,
 			name: name,
 		},
 		content: nodeContent{
-			use: 1,
+			use: NodeContentUseString,
 			str: format(val),
 		},
 	}
@@ -198,11 +198,11 @@ func (u *unmarshalHelper) pushSingleValObj(myid objectID, name string, val pdf.V
 	}
 	n := pdfNode{
 		key: nodeKey{
-			use:  4,
+			use:  NodeKeyUseSingleObj,
 			name: name,
 		},
 		content: nodeContent{
-			use: 4,
+			use: NodeContentUseSingleObj,
 			str: format(val),
 		},
 	}
@@ -224,10 +224,10 @@ func (u *unmarshalHelper) pushStream(myid objectID, val pdf.Value) error {
 
 	n := pdfNode{
 		key: nodeKey{
-			use: 3,
+			use: NodeKeyUseStream,
 		},
 		content: nodeContent{
-			use:    3,
+			use:    NodeContentUseStream,
 			stream: stream,
 		},
 	}
@@ -242,11 +242,11 @@ func (u *unmarshalHelper) pushItemVal(myid objectID, index int, val pdf.Value) {
 	}
 	n := pdfNode{
 		key: nodeKey{
-			use:   2,
+			use:   NodeKeyUseIndex,
 			index: index,
 		},
 		content: nodeContent{
-			use: 1,
+			use: NodeContentUseString,
 			str: format(val),
 		},
 	}
@@ -259,11 +259,11 @@ func (u *unmarshalHelper) pushItemRef(myid objectID, index int, refID objectID) 
 	}
 	n := pdfNode{
 		key: nodeKey{
-			use:   2,
+			use:   NodeKeyUseIndex,
 			index: index,
 		},
 		content: nodeContent{
-			use:   2,
+			use:   NodeContentUseRefTo,
 			refTo: refID,
 		},
 	}
@@ -276,11 +276,11 @@ func (u *unmarshalHelper) pushRef(myid objectID, name string, refID objectID) {
 	}
 	n := pdfNode{
 		key: nodeKey{
-			use:  1,
+			use:  NodeKeyUseName,
 			name: name,
 		},
 		content: nodeContent{
-			use:   2,
+			use:   NodeContentUseRefTo,
 			refTo: refID,
 		},
 	}

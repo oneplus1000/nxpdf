@@ -55,14 +55,28 @@ func (p pdfNode) clone() pdfNode {
 	return p
 }
 
+const (
+	NodeKeyUseName      = 1
+	NodeKeyUseIndex     = 2
+	NodeKeyUseStream    = 3
+	NodeKeyUseSingleObj = 4
+)
+
 type nodeKey struct {
 	use   int // 1 = name , 2 = index , 3 = stream , 4 = single obj
 	name  string
 	index int
 }
 
+const (
+	NodeContentUseString    = 1
+	NodeContentUseRefTo     = 2
+	NodeContentUseStream    = 3
+	NodeContentUseSingleObj = 4
+)
+
 type nodeContent struct {
-	use    int // 1 = str , 2 refTp , 3 = stream , 4 = single obj
+	use    int // 1 = str , 2 refTo , 3 = stream , 4 = single obj
 	str    string
 	refTo  objectID
 	stream []byte

@@ -34,11 +34,33 @@ func (p *PdfData) push(myID objectID, node pdfNode) {
 //build build pdf
 func (p *PdfData) build() error {
 
-	for range p.subsetFonts {
-		//TODO: append sub set font to p.objects
+	var err error
+	maxFakeID, _ := p.findMaxFakeID()
+
+	//append subsetfonts
+	for _, ss := range p.subsetFonts {
+		maxFakeID, err = p.appendSubsetFont(ss, maxFakeID)
+		if err != nil {
+			return errors.Wrap(err, "")
+		}
 	}
 
 	return nil
+}
+
+func (p *PdfData) appendSubsetFont(ssf *subsetFont, maxFakeID uint32) (uint32, error) {
+	maxFakeID, err := p.appendCidFont(ssf, maxFakeID)
+	if err != nil {
+		return 0, errors.Wrap(err, "")
+	}
+	return maxFakeID, nil
+}
+
+func (p *PdfData) appendCidFont(ssf *subsetFont, maxFakeID uint32) (uint32, error) {
+	var cidNode pdfNode
+	cidNode.key = nodeKey{}
+	//	cidNode.content
+	return 0, nil
 }
 
 //bytes return []byte of pdf file
@@ -105,6 +127,20 @@ func formatXrefline(n int) string {
 	return str
 }
 
+func (p PdfData) findMaxFakeID() (uint32, bool) {
+	maxFakeID := uint32(0)
+	foundFakeID := false
+	for objID := range p.objects {
+		if !objID.isReal {
+			if objID.id >= maxFakeID {
+				maxFakeID = objID.id
+			}
+			foundFakeID = true
+		}
+	}
+	return maxFakeID, foundFakeID
+}
+
 func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 
 	var buff bytes.Buffer
@@ -124,14 +160,14 @@ func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
 
 		for _, node := range *nodes {
 			//key
-			if node.key.use == 1 {
+			if node.key.use == NodeKeyUseName {
 				buff.WriteString(fmt.Sprintf("/%s", node.key.name))
 			}
 			//content
 			buff.WriteString(" ")
-			if node.content.use == 1 || node.content.use == 4 {
+			if node.content.use == NodeContentUseString || node.content.use == NodeContentUseSingleObj {
 				buff.WriteString(fmt.Sprintf("%s", node.content.str))
-			} else if node.content.use == 2 {
+			} else if node.content.use == NodeContentUseRefTo {
 				if node.content.refTo.isReal {
 					buff.WriteString(fmt.Sprintf("%d 0 R", node.content.refTo.id))
 				} else {
@@ -182,7 +218,7 @@ func (p PdfData) isArrayNodes(nodes *pdfNodes) bool {
 		return false
 	}
 	for _, node := range *nodes {
-		if node.key.use == 2 {
+		if node.key.use == NodeKeyUseIndex {
 			return true
 		}
 	}
@@ -194,7 +230,7 @@ func (p PdfData) isSingleValObjNodes(nodes *pdfNodes) bool {
 		return false
 	}
 	for _, node := range *nodes {
-		if node.key.use == 4 {
+		if node.key.use == NodeKeyUseSingleObj {
 			return true
 		}
 	}
@@ -207,7 +243,7 @@ func (p PdfData) isStream(nodes *pdfNodes) (int, bool) {
 	}
 
 	for i, node := range *nodes {
-		if node.key.use == 3 {
+		if node.key.use == NodeKeyUseStream {
 			return i, true
 		}
 	}

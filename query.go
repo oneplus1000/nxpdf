@@ -14,9 +14,9 @@ func (q *query) findDict(keyname string, val string) ([]queryResult, error) {
 	var results []queryResult
 	for objID, nodes := range q.pdfdata.objects {
 		for _, node := range *nodes {
-			if node.key.use == 1 &&
+			if node.key.use == NodeKeyUseName &&
 				node.key.name == keyname &&
-				node.content.use == 1 &&
+				node.content.use == NodeContentUseString &&
 				node.content.str == val {
 
 				var result queryResult

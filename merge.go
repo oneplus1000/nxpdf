@@ -82,7 +82,7 @@ func mergePages(a, b *PdfData, maxRealIDOfA uint32) error {
 
 	var kidsIDOfA objectID
 	for _, nodeOfA := range *a.objects[pagesOfA.objID] {
-		if nodeOfA.key.use == 1 && nodeOfA.key.name == "Kids" {
+		if nodeOfA.key.use == NodeKeyUseName && nodeOfA.key.name == "Kids" {
 			kidsIDOfA = nodeOfA.content.refTo
 			break
 		}
@@ -90,7 +90,7 @@ func mergePages(a, b *PdfData, maxRealIDOfA uint32) error {
 
 	var kidsIDOfB objectID
 	for _, nodeOfB := range *b.objects[pagesOfB.objID] {
-		if nodeOfB.key.use == 1 && nodeOfB.key.name == "Kids" {
+		if nodeOfB.key.use == NodeKeyUseName && nodeOfB.key.name == "Kids" {
 			kidsIDOfB = nodeOfB.content.refTo
 			break
 		}
@@ -109,7 +109,7 @@ func mergePages(a, b *PdfData, maxRealIDOfA uint32) error {
 
 	count := a.objects[kidsIDOfA].len()
 	for i, node := range *a.objects[pagesOfA.objID] {
-		if node.key.use == 1 && node.key.name == "Count" {
+		if node.key.use == NodeKeyUseName && node.key.name == "Count" {
 			(*a.objects[pagesOfA.objID])[i].content.str = fmt.Sprintf("%d", count)
 		}
 	}
@@ -168,7 +168,7 @@ func shiftID(src *PdfData, realIDOffset uint32, fakeIDOffset uint32) (*PdfData, 
 		for i := 0; i < size; i++ {
 			srcNode := (*srcNodes)[i]
 			destNode := srcNode.clone()
-			if destNode.content.use == 2 {
+			if destNode.content.use == NodeContentUseRefTo {
 				if destNode.content.refTo.isReal {
 					destNode.content.refTo.id = destNode.content.refTo.id + realIDOffset
 				} else {
