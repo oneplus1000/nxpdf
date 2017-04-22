@@ -8,6 +8,8 @@ type objectID struct {
 	//fromRealID uint32
 }
 
+var objectIDEmpty = objectID{}
+
 func (o objectID) String() string {
 	if o.isReal {
 		return fmt.Sprintf("%d", o.id)

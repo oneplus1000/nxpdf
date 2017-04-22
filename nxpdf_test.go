@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestRead(t *testing.T) {
+func _TestRead(t *testing.T) {
 
 	isExists, err := exists("testing/out/")
 	if err != nil {
@@ -40,7 +40,7 @@ func TestRead(t *testing.T) {
 	//testRead(t, "testing/out/pdf_from_iia_out.pdf", "")
 }
 
-func TestMerge(t *testing.T) {
+func _TestMerge(t *testing.T) {
 	testMerge(t, "testing/pdf/twopage.pdf", "testing/pdf/pdf_from_gopdf.pdf", "testing/out/twopage_and_pdf_from_gopdf_out.pdf")
 	testMerge(t, "testing/pdf/jpg.pdf", "testing/pdf/pdf_from_docx.pdf", "testing/out/jpg_and_pdf_from_docx_out.pdf")
 }
@@ -81,7 +81,7 @@ func testInsertText(path string, outpath string) error {
 		return err
 	}
 
-	data, err := pdfdata.bytes()
+	data, err := BuildPdf(pdfdata)
 	if err != nil {
 		return err
 	}

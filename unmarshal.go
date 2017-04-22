@@ -177,7 +177,7 @@ func (u *unmarshalHelper) nextFakeID() uint32 {
 
 func (u *unmarshalHelper) pushVal(myid objectID, name string, val pdf.Value) {
 	if printDebug {
-		fmt.Printf("%s %s %s\n", myid, name, val.String())
+		fmt.Printf("pushVal %s %s %s\n", myid, name, val.String())
 	}
 	n := pdfNode{
 		key: nodeKey{
@@ -194,7 +194,7 @@ func (u *unmarshalHelper) pushVal(myid objectID, name string, val pdf.Value) {
 
 func (u *unmarshalHelper) pushSingleValObj(myid objectID, name string, val pdf.Value) {
 	if printDebug {
-		fmt.Printf("%s %s %s\n", myid, name, val.String())
+		fmt.Printf("pushSingleValObj %s %s %s\n", myid, name, val.String())
 	}
 	n := pdfNode{
 		key: nodeKey{
@@ -219,7 +219,7 @@ func (u *unmarshalHelper) pushStream(myid objectID, val pdf.Value) error {
 	defer rd.Close()
 
 	if printDebug {
-		fmt.Printf("%s [stream=%d]\n", myid, len(stream))
+		fmt.Printf("pushStream %s [stream=%d]\n", myid, len(stream))
 	}
 
 	n := pdfNode{
@@ -238,7 +238,7 @@ func (u *unmarshalHelper) pushStream(myid objectID, val pdf.Value) error {
 
 func (u *unmarshalHelper) pushItemVal(myid objectID, index int, val pdf.Value) {
 	if printDebug {
-		fmt.Printf("%s [%d] %s\n", myid, index, val.String())
+		fmt.Printf("pushItemVal %s [%d] %s\n", myid, index, val.String())
 	}
 	n := pdfNode{
 		key: nodeKey{
@@ -255,7 +255,7 @@ func (u *unmarshalHelper) pushItemVal(myid objectID, index int, val pdf.Value) {
 
 func (u *unmarshalHelper) pushItemRef(myid objectID, index int, refID objectID) {
 	if printDebug {
-		fmt.Printf("%s [%d] '%s 0 R'\n", myid, index, refID)
+		fmt.Printf("pushItemRef %s [%d] '%s 0 R'\n", myid, index, refID)
 	}
 	n := pdfNode{
 		key: nodeKey{
@@ -272,7 +272,7 @@ func (u *unmarshalHelper) pushItemRef(myid objectID, index int, refID objectID) 
 
 func (u *unmarshalHelper) pushRef(myid objectID, name string, refID objectID) {
 	if printDebug {
-		fmt.Printf("%s %s '%s 0 R'\n", myid, name, refID)
+		fmt.Printf("pushRef %s %s '%s 0 R'\n", myid, name, refID)
 	}
 	n := pdfNode{
 		key: nodeKey{
@@ -330,4 +330,4 @@ func digit(n string, digit int) string {
 	return buff.String()
 }
 
-const printDebug = false
+const printDebug = true

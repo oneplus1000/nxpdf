@@ -36,31 +36,17 @@ func (p *PdfData) build() error {
 
 	var err error
 	maxFakeID, _ := p.findMaxFakeID()
+	maxRealID, _ := p.findMaxRealID()
 
 	//append subsetfonts
-	for _, ss := range p.subsetFonts {
-		maxFakeID, err = p.appendSubsetFont(ss, maxFakeID)
+	for fontRef, ss := range p.subsetFonts {
+		maxRealID, maxFakeID, err = p.appendSubsetFont(ss, fontRef, maxRealID, maxFakeID)
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
 	}
 
 	return nil
-}
-
-func (p *PdfData) appendSubsetFont(ssf *subsetFont, maxFakeID uint32) (uint32, error) {
-	maxFakeID, err := p.appendCidFont(ssf, maxFakeID)
-	if err != nil {
-		return 0, errors.Wrap(err, "")
-	}
-	return maxFakeID, nil
-}
-
-func (p *PdfData) appendCidFont(ssf *subsetFont, maxFakeID uint32) (uint32, error) {
-	var cidNode pdfNode
-	cidNode.key = nodeKey{}
-	//	cidNode.content
-	return 0, nil
 }
 
 //bytes return []byte of pdf file
@@ -139,6 +125,20 @@ func (p PdfData) findMaxFakeID() (uint32, bool) {
 		}
 	}
 	return maxFakeID, foundFakeID
+}
+
+func (p PdfData) findMaxRealID() (uint32, bool) {
+	maxRealID := uint32(0)
+	foundRealID := false
+	for objID := range p.objects {
+		if objID.isReal {
+			if objID.id >= maxRealID {
+				maxRealID = objID.id
+			}
+			foundRealID = true
+		}
+	}
+	return maxRealID, foundRealID
 }
 
 func (p PdfData) bytesOfNodesByID(id objectID) ([]byte, error) {
