@@ -105,3 +105,18 @@ func (s *subsetFont) charCodeToGlyphIndexFormat4(r rune) (uint, error) {
 
 	return (s.ttfp.GlyphIdArray[int(idx)] + s.ttfp.IdDelta[seg]) & 0xFFFF, nil
 }
+
+//GlyphIndexToPdfWidth get with from glyphIndex
+func (s *subsetFont) glyphIndexToPdfWidth(glyphIndex uint) uint {
+	numberOfHMetrics := s.ttfp.NumberOfHMetrics()
+	unitsPerEm := s.ttfp.UnitsPerEm()
+	if glyphIndex >= numberOfHMetrics {
+		glyphIndex = numberOfHMetrics - 1
+	}
+
+	width := s.ttfp.Widths()[glyphIndex]
+	if unitsPerEm == 1000 {
+		return width
+	}
+	return width * 1000 / unitsPerEm
+}
