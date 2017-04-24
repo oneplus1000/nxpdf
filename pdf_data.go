@@ -11,8 +11,9 @@ import (
 
 //PdfData hold data of pdf file
 type PdfData struct {
-	subsetFonts map[FontRef](*subsetFont)
-	objects     map[objectID]*pdfNodes
+	subsetFonts    map[FontRef](*subsetFont)
+	contentCachers []contentCacher
+	objects        map[objectID]*pdfNodes
 }
 
 func newPdfData() *PdfData {
@@ -41,6 +42,14 @@ func (p *PdfData) build() error {
 	//append subsetfonts
 	for fontRef, ss := range p.subsetFonts {
 		maxRealID, maxFakeID, err = p.appendSubsetFont(ss, fontRef, maxRealID, maxFakeID)
+		if err != nil {
+			return errors.Wrap(err, "")
+		}
+	}
+
+	var buff bytes.Buffer
+	for _, cache := range p.contentCachers {
+		_, err := cache.writeTo(&buff)
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
