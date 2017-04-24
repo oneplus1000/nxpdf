@@ -29,7 +29,9 @@ func merge(a, b *PdfData) error {
 	}*/
 
 	maxRealIDOfA, maxFakeIDOfA, err := maxID(a)
-
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
 	//fmt.Printf("%d %d\n", maxRealIDOfA, maxFakeIDOfA)
 
 	//remove Catalog,Trailer b

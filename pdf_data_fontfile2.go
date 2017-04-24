@@ -100,7 +100,7 @@ func (p *PdfData) makeFont(ssf *subsetFont) ([]byte, error) {
 	var buff Buff
 	ttfp := &ssf.ttfp
 	tables := make(map[string]font.TableDirectoryEntry)
-	tables["cvt "] = ttfp.GetTables()["cvt "] //มีช่องว่างด้วยนะ
+	tables["cvt "] = ttfp.GetTables()["cvt "] //มีช่องว่างด้วยนะ (space is important)
 	tables["fpgm"] = ttfp.GetTables()["fpgm"]
 	tables["glyf"] = ttfp.GetTables()["glyf"]
 	tables["head"] = ttfp.GetTables()["head"]
@@ -279,11 +279,11 @@ func (p *PdfData) completeGlyphClosure(ssf *subsetFont, glyphs map[rune]uint) (m
 	return glyphs, glyphArray
 }
 
-const WeHaveAScale = 8
-const MoreComponents = 32
-const Arg1And2AreWords = 1
-const WeHaveAnXAndYScale = 64
-const WeHaveATwoByTwo = 128
+const weHaveAScale = 8
+const moreComponents = 32
+const arg1And2AreWords = 1
+const weHaveAnXAndYScale = 64
+const weHaveATwoByTwo = 128
 
 //AddCompositeGlyphs add composite glyph
 //composite glyph is a Unicode entity that can be defined as a sequence of one or more other characters.
@@ -320,19 +320,19 @@ func (p *PdfData) AddCompositeGlyphs(ssf *subsetFont, glyphArray *[]int, glyph i
 			*glyphArray = append(*glyphArray, int(cGlyph))
 		}
 
-		if (flags & MoreComponents) == 0 {
+		if (flags & moreComponents) == 0 {
 			return
 		}
 		offsetAppend := 4
-		if (flags & Arg1And2AreWords) == 0 {
+		if (flags & arg1And2AreWords) == 0 {
 			offsetAppend = 2
 		}
-		if (flags & WeHaveAScale) != 0 {
+		if (flags & weHaveAScale) != 0 {
 			offsetAppend += 2
-		} else if (flags & WeHaveAnXAndYScale) != 0 {
+		} else if (flags & weHaveAnXAndYScale) != 0 {
 			offsetAppend += 4
 		}
-		if (flags & WeHaveATwoByTwo) != 0 {
+		if (flags & weHaveATwoByTwo) != 0 {
 			offsetAppend += 8
 		}
 		offset += offsetAppend
