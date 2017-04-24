@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/signintech/gopdf/fontmaker/core"
 )
 
 func (p *PdfData) appendSubsetFont(ssf *subsetFont, fontRef FontRef, maxRealID uint32, maxFakeID uint32) (uint32, uint32, error) {
@@ -205,7 +206,10 @@ func (p *PdfData) appendCidFont(
 	cidFontNodes.append(fontDescriptorNode)
 
 	//fontDescriptor
-	p.appendFontDescriptor(ssf, fontRef, fontDescriptorRefID, maxRealID, maxFakeID)
+	maxRealID, maxFakeID, err := p.appendFontDescriptor(ssf, fontRef, fontDescriptorRefID, maxRealID, maxFakeID)
+	if err != nil {
+		return maxRealID, maxFakeID, errors.Wrap(err, "")
+	}
 
 	//w
 	wNodes := pdfNodes{}
@@ -291,7 +295,185 @@ func (p *PdfData) appendFontDescriptor(
 		},
 	}
 
+	ascentNode := pdfNode{
+		key: nodeKey{
+			name: "Ascent",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", toPdfUnit(ssf.ttfp.Ascender(), ssf.ttfp.UnitsPerEm())),
+		},
+	}
+
+	capHeightNode := pdfNode{
+		key: nodeKey{
+			name: "CapHeight",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", toPdfUnit(ssf.ttfp.CapHeight(), ssf.ttfp.UnitsPerEm())),
+		},
+	}
+
+	flagsNode := pdfNode{
+		key: nodeKey{
+			name: "Flags",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", ssf.ttfp.Flag()),
+		},
+	}
+
+	maxFakeID++
+	fontBoxNodeItemRefID := objectID{
+		id:     maxFakeID,
+		isReal: false,
+	}
+	fontBoxNode := pdfNode{
+		key: nodeKey{
+			name: "FontBBox",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use:   NodeContentUseRefTo,
+			refTo: fontBoxNodeItemRefID,
+		},
+	}
+
+	fontNameNode := pdfNode{
+		key: nodeKey{
+			name: "FontName",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: "/" + string(fontRef),
+		},
+	}
+
+	italicAngleNode := pdfNode{
+		key: nodeKey{
+			name: "ItalicAngle",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", ssf.ttfp.ItalicAngle()),
+		},
+	}
+
+	stemVNode := pdfNode{
+		key: nodeKey{
+			name: "ItalicAngle",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: "0",
+		},
+	}
+
+	xHeightNode := pdfNode{
+		key: nodeKey{
+			name: "XHeight",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", toPdfUnit(ssf.ttfp.XHeight(), ssf.ttfp.UnitsPerEm())),
+		},
+	}
+
+	maxRealID++
+	fontFile2RefID := objectID{
+		id:     maxRealID,
+		isReal: true,
+	}
+
+	fontFile2RefNode := pdfNode{
+		key: nodeKey{
+			name: "FontFile2",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use:   NodeContentUseRefTo,
+			refTo: fontFile2RefID,
+		},
+	}
+
+	maxRealID, maxFakeID, err := p.appendFontFile2(ssf, fontRef, fontFile2RefID, maxRealID, maxFakeID) //fontfile2
+	if err != nil {
+		return maxRealID, maxFakeID, errors.Wrap(err, "")
+	}
+
 	fontDescriptorNodes.append(typeNode)
+	fontDescriptorNodes.append(ascentNode)
+	fontDescriptorNodes.append(capHeightNode)
+	fontDescriptorNodes.append(flagsNode)
+	fontDescriptorNodes.append(fontBoxNode)
+	fontDescriptorNodes.append(fontNameNode)
+	fontDescriptorNodes.append(italicAngleNode)
+	fontDescriptorNodes.append(stemVNode)
+	fontDescriptorNodes.append(xHeightNode)
+	fontDescriptorNodes.append(fontFile2RefNode)
+
+	//fontbox
+	fontBoxNodeItemNodes := pdfNodes{}
+	p.objects[fontBoxNodeItemRefID] = &fontBoxNodeItemNodes
+
+	fontBoxItemXMinNode := pdfNode{
+		key: nodeKey{
+			use: NodeKeyUseIndex,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", toPdfUnit(ssf.ttfp.XMin(), ssf.ttfp.UnitsPerEm())),
+		},
+	}
+
+	fontBoxItemYMinNode := pdfNode{
+		key: nodeKey{
+			use: NodeKeyUseIndex,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", toPdfUnit(ssf.ttfp.YMin(), ssf.ttfp.UnitsPerEm())),
+		},
+	}
+
+	fontBoxItemXMaxNode := pdfNode{
+		key: nodeKey{
+			use: NodeKeyUseIndex,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", toPdfUnit(ssf.ttfp.XMax(), ssf.ttfp.UnitsPerEm())),
+		},
+	}
+
+	fontBoxItemYMaxNode := pdfNode{
+		key: nodeKey{
+			use: NodeKeyUseIndex,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", toPdfUnit(ssf.ttfp.YMax(), ssf.ttfp.UnitsPerEm())),
+		},
+	}
+
+	fontBoxNodeItemNodes.append(fontBoxItemXMinNode)
+	fontBoxNodeItemNodes.append(fontBoxItemYMinNode)
+	fontBoxNodeItemNodes.append(fontBoxItemXMaxNode)
+	fontBoxNodeItemNodes.append(fontBoxItemYMaxNode)
 
 	return maxRealID, maxFakeID, nil
+}
+
+//convert unit
+func toPdfUnit(val int, unitsPerEm uint) int {
+	return core.Round(float64(float64(val) * 1000.00 / float64(unitsPerEm)))
 }
