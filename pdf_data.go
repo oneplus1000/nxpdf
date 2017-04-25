@@ -3,8 +3,10 @@ package nxpdf
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -45,9 +47,36 @@ func (p *PdfData) build() error {
 		return ErrDictNotFound
 	}
 
+	kidsNode, err := newQuery(p).findPdfNodeByKeyName(pagesResults[0].objID, "Kids")
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+
+	kidObjectIDs := make(map[int]objectID)
+	kidsNodes := p.objects[kidsNode.content.refTo]
+	for i, kid := range *kidsNodes {
+		kidObjectIDs[i] = kid.content.refTo
+	}
+
+	resObjectIDs := make(map[int]objectID)
+	contentObjectIDs := make(map[int]objectID)
+	for i, kidObjectID := range kidObjectIDs {
+
+		resNode, err := newQuery(p).findPdfNodeByKeyName(kidObjectID, "Resources")
+		if err != nil {
+			return errors.Wrap(err, "")
+		}
+		resObjectIDs[i] = resNode.content.refTo
+
+		contentNode, err := newQuery(p).findPdfNodeByKeyName(kidObjectID, "Contents")
+		if err != nil {
+			return errors.Wrap(err, "")
+		}
+		contentObjectIDs[i] = contentNode.content.refTo
+	}
 	//end find all ref
 
-	err = p.buildSubsetFont()
+	err = p.buildSubsetFont(resObjectIDs)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
@@ -60,20 +89,83 @@ func (p *PdfData) build() error {
 	return nil
 }
 
-func (p *PdfData) buildSubsetFont() error {
+func (p *PdfData) buildSubsetFont(resObjectIDs map[int]objectID) error {
 
 	var err error
 	maxFakeID, _ := p.findMaxFakeID()
 	maxRealID, _ := p.findMaxRealID()
 
+	var newFontObjectIDs []objectID
 	for fontRef, ss := range p.subsetFonts {
-		maxRealID, maxFakeID, err = p.appendSubsetFont(ss, fontRef, maxRealID, maxFakeID)
+		var newFontObjectID objectID
+		newFontObjectID, maxRealID, maxFakeID, err = p.appendSubsetFont(ss, fontRef, maxRealID, maxFakeID)
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
+		newFontObjectIDs = append(newFontObjectIDs, newFontObjectID)
+	}
+
+	//append subset font to all res
+	resIDs := make(map[objectID]bool)
+	for _, objectID := range resObjectIDs {
+		if _, ok := resIDs[objectID]; !ok {
+			resIDs[objectID] = true
+		}
+	}
+
+	for resID := range resIDs {
+		fontNode, err := newQuery(p).findPdfNodeByKeyName(resID, "Font")
+		if err != nil {
+			return errors.Wrap(err, "")
+		}
+		fontNodes := p.objects[fontNode.content.refTo]
+		fName := "F"
+		fIndexMax := 0
+		for _, node := range *fontNodes {
+			fIndex := 0
+			fName, fIndex, err = p.fontnameExtract(node.key.name)
+			if err != nil {
+				return errors.Wrap(err, "")
+			}
+			if fIndex > fIndexMax {
+				fIndexMax = fIndex
+			}
+		}
+
+		for i, newFontObjectID := range newFontObjectIDs {
+			fontNode := pdfNode{
+				key: nodeKey{
+					name: fmt.Sprintf("%s%d", fName, fIndexMax+1+i),
+					use:  NodeKeyUseName,
+				},
+				content: nodeContent{
+					use:   NodeContentUseRefTo,
+					refTo: newFontObjectID,
+				},
+			}
+			fontNodes.append(fontNode)
+		}
+
 	}
 
 	return nil
+}
+
+func (p *PdfData) fontnameExtract(fontname string) (string, int, error) {
+
+	rex := regexp.MustCompile("[0-9]+")
+	if !rex.MatchString(fontname) {
+		return "", 0, fmt.Errorf("can not parse %s", fontname)
+	}
+
+	fname := rex.ReplaceAllString(fontname, "")
+
+	findex, err := strconv.Atoi(strings.Replace(fontname, fname, "", -1))
+	if err != nil {
+		return "", 0, errors.Wrap(err, "")
+	}
+
+	return fname, findex, nil
 }
 
 func (p *PdfData) buildContent() error {

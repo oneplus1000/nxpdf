@@ -7,7 +7,7 @@ import (
 	"github.com/signintech/gopdf/fontmaker/core"
 )
 
-func (p *PdfData) appendSubsetFont(ssf *subsetFont, fontRef FontRef, maxRealID uint32, maxFakeID uint32) (uint32, uint32, error) {
+func (p *PdfData) appendSubsetFont(ssf *subsetFont, fontRef FontRef, maxRealID uint32, maxFakeID uint32) (objectID, uint32, uint32, error) {
 
 	ssfNodes := pdfNodes{}
 
@@ -110,10 +110,10 @@ func (p *PdfData) appendSubsetFont(ssf *subsetFont, fontRef FontRef, maxRealID u
 	//CID Font
 	maxRealID, maxFakeID, err := p.appendCidFont(ssf, fontRef, cidFontRefID, maxRealID, maxFakeID)
 	if err != nil {
-		return maxRealID, maxFakeID, errors.Wrap(err, "")
+		return ssfNodesObjectID, maxRealID, maxFakeID, errors.Wrap(err, "")
 	}
 
-	return maxRealID, maxFakeID, nil
+	return ssfNodesObjectID, maxRealID, maxFakeID, nil
 }
 
 func (p *PdfData) appendCidFont(
