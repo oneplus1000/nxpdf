@@ -35,11 +35,37 @@ func (p *PdfData) push(myID objectID, node pdfNode) {
 //build build pdf
 func (p *PdfData) build() error {
 
+	//find all ref
+	pagesResults, err := newQuery(p).findDict("Type", "/Pages")
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+
+	if len(pagesResults) <= 0 {
+		return ErrDictNotFound
+	}
+
+	//end find all ref
+
+	err = p.buildSubsetFont()
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+
+	err = p.buildContent()
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
+
+	return nil
+}
+
+func (p *PdfData) buildSubsetFont() error {
+
 	var err error
 	maxFakeID, _ := p.findMaxFakeID()
 	maxRealID, _ := p.findMaxRealID()
 
-	//append subsetfonts
 	for fontRef, ss := range p.subsetFonts {
 		maxRealID, maxFakeID, err = p.appendSubsetFont(ss, fontRef, maxRealID, maxFakeID)
 		if err != nil {
@@ -47,9 +73,14 @@ func (p *PdfData) build() error {
 		}
 	}
 
-	var buff bytes.Buffer
+	return nil
+}
+
+func (p *PdfData) buildContent() error {
+
+	var buffContent bytes.Buffer
 	for _, cache := range p.contentCachers {
-		_, err := cache.writeTo(&buff)
+		_, err := cache.build(&buffContent)
 		if err != nil {
 			return errors.Wrap(err, "")
 		}

@@ -43,6 +43,15 @@ func (s *subsetFont) addChars(text string) error {
 	return nil
 }
 
+func (s *subsetFont) getGlyphIndex(r rune) (uint, error) {
+
+	if idx, ok := s.glyphIndexs[r]; ok {
+		return idx, nil
+	}
+
+	return 0, ErrRuneNotFound
+}
+
 //charCodeToGlyphIndex get glyph index from char code
 func (s *subsetFont) charCodeToGlyphIndex(r rune) (uint, error) {
 
@@ -119,4 +128,19 @@ func (s *subsetFont) glyphIndexToPdfWidth(glyphIndex uint) uint {
 		return width
 	}
 	return width * 1000 / unitsPerEm
+}
+
+//KernValueByLeft find kern value from kern table by left
+func (s *subsetFont) kernValueByLeft(left uint) (bool, *font.KernValue) {
+
+	k := s.ttfp.Kern()
+	if k == nil {
+		return false, nil
+	}
+
+	if kval, ok := k.Kerning[left]; ok {
+		return true, &kval
+	}
+
+	return false, nil
 }

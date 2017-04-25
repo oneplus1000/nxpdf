@@ -30,6 +30,19 @@ func (q *query) findDict(keyname string, val string) ([]queryResult, error) {
 	return results, nil
 }
 
+func (q *query) findPdfNodeByKeyName(id objectID, keyname string) (*pdfNode, error) {
+
+	if nodes, ok := q.pdfdata.objects[id]; ok {
+		for _, node := range *nodes {
+			if node.key.name == keyname {
+				return &node, nil
+			}
+		}
+		return nil, ErrKeyNameNotFound
+	}
+	return nil, ErrObjectIDNotFound
+}
+
 type queryResult struct {
 	objID objectID
 	node  pdfNode
