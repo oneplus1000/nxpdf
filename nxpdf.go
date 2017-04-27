@@ -33,8 +33,8 @@ func AddFontFilePath(p *PdfData, fontpath string) (FontRef, error) {
 }
 
 //InsertText insert text to pdf
-func InsertText(p *PdfData, fontRef FontRef, text string, rect *Position, option *TextOption) error {
-	return insertText(p, fontRef, text, rect, option)
+func InsertText(p *PdfData, fontRef FontRef, text string, pageIndex int, rect *Position, option *TextOption) error {
+	return insertText(p, fontRef, text, pageIndex, rect, option)
 }
 
 //MergePdf merge b into a

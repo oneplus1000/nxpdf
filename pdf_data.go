@@ -13,9 +13,9 @@ import (
 
 //PdfData hold data of pdf file
 type PdfData struct {
-	subsetFonts    map[FontRef](*subsetFont)
-	contentCachers []contentCacher
-	objects        map[objectID]*pdfNodes
+	subsetFonts              map[FontRef](*subsetFont)
+	mapPageAndContentCachers map[int](*[]contentCacher)
+	objects                  map[objectID]*pdfNodes
 }
 
 func newPdfData() *PdfData {
@@ -81,7 +81,7 @@ func (p *PdfData) build() error {
 		return errors.Wrap(err, "")
 	}
 
-	err = p.buildContent()
+	err = p.buildContent(contentObjectIDs)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
@@ -168,13 +168,35 @@ func (p *PdfData) fontnameExtract(fontname string) (string, int, error) {
 	return fname, findex, nil
 }
 
-func (p *PdfData) buildContent() error {
+func (p *PdfData) buildContent(contentObjectIDs map[int]objectID) error {
 
-	var buffContent bytes.Buffer
-	for _, cache := range p.contentCachers {
-		_, err := cache.build(&buffContent)
-		if err != nil {
-			return errors.Wrap(err, "")
+	mapPageAndBuff := make(map[int]*bytes.Buffer) //map ระหว่าง pageindex กับ buffer( ของ contnent)
+	for pageIndex, caches := range p.mapPageAndContentCachers {
+		if _, ok := mapPageAndBuff[pageIndex]; !ok {
+			mapPageAndBuff[pageIndex] = &bytes.Buffer{}
+		}
+		for _, cache := range *caches {
+			_, err := cache.build(mapPageAndBuff[pageIndex])
+			if err != nil {
+				return errors.Wrap(err, "")
+			}
+		}
+	}
+
+	for pageIndex, buff := range mapPageAndBuff {
+
+		if contentObjectID, ok := contentObjectIDs[pageIndex]; ok {
+			contentNodes := p.objects[contentObjectID]
+			for i := range *contentNodes {
+
+				if (*contentNodes)[i].content.use == NodeContentUseStream {
+					//fmt.Printf("\n\n---%d-%d--\n%s\n", pageIndex, contentObjectID.id, buff.String()) //debug
+					tmp := bytes.NewBuffer((*contentNodes)[i].content.stream)
+					tmp.Write(buff.Bytes())
+					(*contentNodes)[i].content.stream = tmp.Bytes()
+					break
+				}
+			}
 		}
 	}
 

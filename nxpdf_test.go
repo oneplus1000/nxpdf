@@ -76,7 +76,7 @@ func testInsertText(path string, outpath string) error {
 		return err
 	}
 
-	err = InsertText(pdfdata, fontRef, "Hello", &Position{PageNum: 1, X: 10, Y: 10}, &TextOption{})
+	err = InsertText(pdfdata, fontRef, "AV", 0, &Position{X: 10, Y: 10}, &TextOption{})
 	if err != nil {
 		return err
 	}

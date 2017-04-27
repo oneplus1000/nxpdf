@@ -15,9 +15,8 @@ const AlignMiddle = 32 //100000
 
 //Position rect
 type Position struct {
-	PageNum int
-	X, Y    float64
-	W, H    float64
+	X, Y float64
+	W, H float64
 }
 
 type TextOption struct {

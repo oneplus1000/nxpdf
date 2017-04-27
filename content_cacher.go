@@ -48,7 +48,7 @@ func (c *contenteCacheText) build(w io.Writer) (int64, error) {
 	}
 
 	x := 10.0           //FIXME: this hard code
-	y := 10.0           //FIXME: this hard code
+	y := 800.00         //FIXME: this hard code
 	fontCountIndex := 1 //FIXME: this hard code
 	fontSize := 14      //FIXME: this hard code
 
@@ -61,7 +61,7 @@ func (c *contenteCacheText) build(w io.Writer) (int64, error) {
 	buff.WriteString(">] TJ\n")
 	buff.WriteString("ET\n")
 
-	fmt.Printf("%s\n", buff.String()) //debug
+	//fmt.Printf("%s\n", buff.String()) //debug
 
 	return buff.WriteTo(w)
 }
