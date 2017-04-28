@@ -16,8 +16,10 @@ type contentCacher interface {
 //contenteCacheText
 
 type contenteCacheText struct {
-	ssf     *subsetFont
-	textRaw string
+	ssf      *subsetFont
+	textRaw  string
+	x, y     int
+	fontSize int
 }
 
 func (c *contenteCacheText) build(w io.Writer) (int64, error) {
@@ -49,7 +51,7 @@ func (c *contenteCacheText) build(w io.Writer) (int64, error) {
 
 	x := 10.0           //FIXME: this hard code
 	y := 800.00         //FIXME: this hard code
-	fontCountIndex := 1 //FIXME: this hard code
+	fontCountIndex := 2 //FIXME: this hard code
 	fontSize := 14      //FIXME: this hard code
 
 	var buff bytes.Buffer
