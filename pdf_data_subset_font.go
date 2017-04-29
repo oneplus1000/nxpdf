@@ -47,7 +47,7 @@ func (p *PdfData) appendSubsetFont(ssf *subsetFont, fontRef FontRef, maxRealID u
 		},
 		content: nodeContent{
 			use: NodeContentUseString,
-			str: "/" + string(fontRef),
+			str: "/" + p.fontName(fontRef),
 		},
 	}
 
@@ -79,12 +79,35 @@ func (p *PdfData) appendSubsetFont(ssf *subsetFont, fontRef FontRef, maxRealID u
 		},
 	}
 
+	maxRealID++
+	toUnicodeRefID := objectID{
+		id:     maxRealID,
+		isReal: true,
+	}
+	toUnicodeNodeRef := pdfNode{
+		key: nodeKey{
+			use:  NodeKeyUseName,
+			name: "ToUnicode",
+		},
+		content: nodeContent{
+			use:   NodeContentUseRefTo,
+			refTo: toUnicodeRefID,
+		},
+	}
+
 	ssfNodes.append(typeNode)
 	ssfNodes.append(subtypeNode)
 	ssfNodes.append(baseFontNode)
 	ssfNodes.append(encodingNode)
 	ssfNodes.append(descendantFontsNode)
+	ssfNodes.append(toUnicodeNodeRef)
 
+	//tounicode
+
+	maxRealID, maxFakeID, err := p.appendToUnicode(ssf, fontRef, toUnicodeRefID, maxRealID, maxFakeID)
+	if err != nil {
+		return ssfNodesObjectID, maxRealID, maxFakeID, errors.Wrap(err, "")
+	}
 	//DescendantFonts
 	maxRealID++
 	cidFontRefID := objectID{
@@ -351,7 +374,7 @@ func (p *PdfData) appendFontDescriptor(
 		},
 		content: nodeContent{
 			use: NodeContentUseString,
-			str: "/" + string(fontRef),
+			str: "/" + p.fontName(fontRef),
 		},
 	}
 
@@ -476,4 +499,8 @@ func (p *PdfData) appendFontDescriptor(
 //convert unit
 func toPdfUnit(val int, unitsPerEm uint) int {
 	return core.Round(float64(float64(val) * 1000.00 / float64(unitsPerEm)))
+}
+
+func (p PdfData) fontName(f FontRef) string {
+	return string(f)
 }
