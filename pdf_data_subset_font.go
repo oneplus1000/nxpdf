@@ -131,7 +131,7 @@ func (p *PdfData) appendSubsetFont(ssf *subsetFont, fontRef FontRef, maxRealID u
 	descendantFontsItemNodes.append(descendantFontsItem0Node)
 
 	//CID Font
-	maxRealID, maxFakeID, err := p.appendCidFont(ssf, fontRef, cidFontRefID, maxRealID, maxFakeID)
+	maxRealID, maxFakeID, err = p.appendCidFont(ssf, fontRef, cidFontRefID, maxRealID, maxFakeID)
 	if err != nil {
 		return ssfNodesObjectID, maxRealID, maxFakeID, errors.Wrap(err, "")
 	}
@@ -168,6 +168,17 @@ func (p *PdfData) appendCidFont(
 		content: nodeContent{
 			use: NodeContentUseString,
 			str: "/CIDFontType2",
+		},
+	}
+
+	baseFontNode := pdfNode{
+		key: nodeKey{
+			name: "BaseFont",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: "/" + p.fontName(fontRef),
 		},
 	}
 
@@ -227,6 +238,7 @@ func (p *PdfData) appendCidFont(
 	cidFontNodes.append(cidSystemInfoNode)
 	cidFontNodes.append(wNode)
 	cidFontNodes.append(fontDescriptorNode)
+	cidFontNodes.append(baseFontNode)
 
 	//fontDescriptor
 	maxRealID, maxFakeID, err := p.appendFontDescriptor(ssf, fontRef, fontDescriptorRefID, maxRealID, maxFakeID)

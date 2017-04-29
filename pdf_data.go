@@ -204,7 +204,7 @@ func (p *PdfData) buildContent(contentObjectIDs map[int]objectID) error {
 }
 
 //bytes return []byte of pdf file
-func (p PdfData) bytes() ([]byte, error) {
+func (p *PdfData) bytes() ([]byte, error) {
 	var buff bytes.Buffer
 	var buffTrailer bytes.Buffer
 	var realIDs []int
@@ -218,7 +218,32 @@ func (p PdfData) bytes() ([]byte, error) {
 	var xreftable []int
 	for _, realID := range realIDs {
 		realObjID := initObjectIDReal(uint32(realID))
-		if realID > 0 {
+		if realID == 0 { //Root
+
+			sizeIdx, err := newQuery(p).findIndexByKeyName(realObjID, "Size")
+			if err != nil {
+				return nil, errors.Wrap(err, "")
+			}
+			p.objects[realObjID].remove(sizeIdx)
+			p.objects[realObjID].append(pdfNode{
+				key: nodeKey{
+					name: "Size",
+					use:  NodeKeyUseName,
+				},
+				content: nodeContent{
+					use: NodeContentUseString,
+					str: fmt.Sprintf("%d", len(realIDs)),
+				},
+			})
+
+			data, err := p.bytesOfNodesByID(realObjID)
+			if err != nil {
+				return nil, errors.Wrap(err, "")
+			}
+			buffTrailer.Write(data)
+			//fmt.Printf("%s \n%d", string(data), len(realIDs))
+
+		} else { //Other
 			buff.WriteString("\n")
 			xreftable = append(xreftable, buff.Len())
 			buff.WriteString(fmt.Sprintf("%d 0 obj", realID))
@@ -228,12 +253,6 @@ func (p PdfData) bytes() ([]byte, error) {
 			}
 			buff.Write(data)
 			buff.WriteString("\nendobj\n")
-		} else {
-			data, err := p.bytesOfNodesByID(realObjID)
-			if err != nil {
-				return nil, errors.Wrap(err, "")
-			}
-			buffTrailer.Write(data)
 		}
 	}
 	startxref := buff.Len()

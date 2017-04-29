@@ -3,6 +3,7 @@ package nxpdf
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 )
 
 func (p *PdfData) appendToUnicode(
@@ -49,6 +50,33 @@ func (p *PdfData) appendToUnicode(
 	buff.WriteString("endbfrange\n")
 	buff.WriteString(suffix)
 	buff.WriteString("\n")
+
+	toUnicodeNodes := pdfNodes{}
+	p.objects[toUnicodeRefID] = &toUnicodeNodes
+
+	lengthNode := pdfNode{
+		key: nodeKey{
+			name: "Length",
+			use:  NodeKeyUseName,
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: strconv.Itoa(buff.Len()),
+		},
+	}
+
+	streamNode := pdfNode{
+		key: nodeKey{
+			use: NodeKeyUseStream,
+		},
+		content: nodeContent{
+			use:    NodeContentUseStream,
+			stream: buff.Bytes(),
+		},
+	}
+
+	toUnicodeNodes.append(lengthNode)
+	toUnicodeNodes.append(streamNode)
 
 	return maxRealID, maxFakeID, nil
 }

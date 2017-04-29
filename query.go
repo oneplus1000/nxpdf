@@ -43,6 +43,19 @@ func (q *query) findPdfNodeByKeyName(id objectID, keyname string) (*pdfNode, err
 	return nil, ErrObjectIDNotFound
 }
 
+func (q *query) findIndexByKeyName(id objectID, keyname string) (int, error) {
+
+	if nodes, ok := q.pdfdata.objects[id]; ok {
+		for i, node := range *nodes {
+			if node.key.name == keyname {
+				return i, nil
+			}
+		}
+		return 0, ErrKeyNameNotFound
+	}
+	return 0, ErrObjectIDNotFound
+}
+
 type queryResult struct {
 	objID objectID
 	node  pdfNode
