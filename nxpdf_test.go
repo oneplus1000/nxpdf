@@ -51,6 +51,14 @@ func TestInsertText(t *testing.T) {
 		t.Errorf("%+v", err)
 		return
 	}
+	testRead(t, "testing/out/pdf_from_gopdf_out_inserttext.pdf", "")
+
+	err = testInsertText("testing/pdf/twopage.pdf", "testing/out/twopage_out_inserttext.pdf")
+	if err != nil {
+		t.Errorf("%+v", err)
+		return
+	}
+	testRead(t, "testing/out/twopage_out_inserttext.pdf", "")
 }
 
 func exists(path string) (bool, error) {

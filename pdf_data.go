@@ -2,7 +2,9 @@ package nxpdf
 
 import (
 	"bytes"
+	"compress/zlib"
 	"fmt"
+	"io"
 	"regexp"
 	"sort"
 	"strconv"
@@ -185,7 +187,16 @@ func (p *PdfData) buildContent(contentObjectIDs map[int]objectID) error {
 
 	for pageIndex, buff := range mapPageAndBuff {
 
-		if contentObjectID, ok := contentObjectIDs[pageIndex]; ok {
+		stm, err := p.getStreamOfContentOfPage(contentObjectIDs, pageIndex)
+		if err != nil {
+			return errors.Wrapf(err, "p.getStreamOfContentOfPage(contentObjectIDs, %d) fail", pageIndex)
+		}
+		stm.Write(buff.Bytes())
+		err = p.reWriteStramObj(contentObjectIDs[pageIndex], stm)
+		if err != nil {
+			return errors.Wrap(err, "p.reWriteStramObj(contentObjectIDs[pageIndex], stm) fail")
+		}
+		/*if contentObjectID, ok := contentObjectIDs[pageIndex]; ok {
 			contentNodes := p.objects[contentObjectID]
 			for i := range *contentNodes {
 
@@ -197,10 +208,87 @@ func (p *PdfData) buildContent(contentObjectIDs map[int]objectID) error {
 					break
 				}
 			}
-		}
+		}*/
 	}
 
 	return nil
+}
+
+func (p *PdfData) reWriteStramObj(id objectID, data *bytes.Buffer) error {
+	nodes := p.objects[id]
+	isStream := false
+	for _, node := range *nodes {
+		if node.content.use == NodeContentUseStream {
+			isStream = true
+			break
+		}
+	}
+
+	if !isStream {
+		return ErrStreamNotFound
+	}
+
+	newNodes := pdfNodes{}
+	newNodeLen := pdfNode{
+		key: nodeKey{
+			use:  NodeKeyUseName,
+			name: "Length",
+		},
+		content: nodeContent{
+			use: NodeContentUseString,
+			str: fmt.Sprintf("%d", data.Len()),
+		},
+	}
+	newNodeStm := pdfNode{
+		key: nodeKey{
+			use: NodeKeyUseStream,
+		},
+		content: nodeContent{
+			use:    NodeContentUseStream,
+			stream: data.Bytes(),
+		},
+	}
+
+	newNodes.append(newNodeLen)
+	newNodes.append(newNodeStm)
+
+	p.objects[id] = &newNodes
+
+	return nil
+}
+
+func (p *PdfData) getStreamOfContentOfPage(contentObjectIDs map[int]objectID, pageIndex int) (*bytes.Buffer, error) {
+	var nodes *pdfNodes
+	filter := ""
+	var stm []byte
+	if id, ok := contentObjectIDs[pageIndex]; ok {
+		nodes = p.objects[id]
+		for _, node := range *nodes {
+			if node.key.name == "Filter" {
+				filter = node.content.str
+			} else if node.content.use == NodeContentUseStream {
+				stm = node.content.stream
+			}
+		}
+	}
+
+	var buff *bytes.Buffer
+	if filter == "/FlateDecode" { //zip
+		buffZip := bytes.NewBuffer(stm)
+		r, err := zlib.NewReader(buffZip)
+		if err != nil {
+			return nil, errors.Wrap(err, "")
+		}
+		defer r.Close()
+		buff = bytes.NewBuffer(nil)
+		_, err = io.Copy(buff, r)
+		if err != nil {
+			return nil, errors.Wrap(err, "")
+		}
+	} else {
+		buff = bytes.NewBuffer(stm)
+	}
+	return buff, nil
 }
 
 //bytes return []byte of pdf file

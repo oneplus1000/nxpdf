@@ -19,3 +19,6 @@ var ErrObjectIDNotFound = errors.New("object id not found")
 
 //ErrKeyNameNotFound keyname not found
 var ErrKeyNameNotFound = errors.New("keyname not found")
+
+//ErrStreamNotFound stream not found
+var ErrStreamNotFound = errors.New("stream not found")
