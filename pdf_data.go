@@ -192,29 +192,17 @@ func (p *PdfData) buildContent(contentObjectIDs map[int]objectID) error {
 			return errors.Wrapf(err, "p.getStreamOfContentOfPage(contentObjectIDs, %d) fail", pageIndex)
 		}
 		stm.Write(buff.Bytes())
-		err = p.reWriteStramObj(contentObjectIDs[pageIndex], stm)
+		err = p.replaceStramObj(contentObjectIDs[pageIndex], stm)
 		if err != nil {
 			return errors.Wrap(err, "p.reWriteStramObj(contentObjectIDs[pageIndex], stm) fail")
 		}
-		/*if contentObjectID, ok := contentObjectIDs[pageIndex]; ok {
-			contentNodes := p.objects[contentObjectID]
-			for i := range *contentNodes {
-
-				if (*contentNodes)[i].content.use == NodeContentUseStream {
-					//fmt.Printf("\n\n---%d-%d--\n%s\n", pageIndex, contentObjectID.id, buff.String()) //debug
-					tmp := bytes.NewBuffer((*contentNodes)[i].content.stream)
-					tmp.Write(buff.Bytes())
-					(*contentNodes)[i].content.stream = tmp.Bytes()
-					break
-				}
-			}
-		}*/
 	}
 
 	return nil
 }
 
-func (p *PdfData) reWriteStramObj(id objectID, data *bytes.Buffer) error {
+func (p *PdfData) replaceStramObj(id objectID, data *bytes.Buffer) error {
+
 	nodes := p.objects[id]
 	isStream := false
 	for _, node := range *nodes {
